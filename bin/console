@@ -1,0 +1,69 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Universal Casino Game Engine — CLI entry point.
+ *
+ * Runs the authoritative engine with no browser and no web server. This is how
+ * migrations, simulations and ad-hoc play are driven.
+ *
+ * Virtual credits only. Nothing here touches real money.
+ */
+
+use CasinoEngine\Cli\Application;
+use CasinoEngine\Cli\Command\DbMigrateCommand;
+use CasinoEngine\Cli\Command\DbStatusCommand;
+use CasinoEngine\Cli\Command\GameListCommand;
+use CasinoEngine\Cli\Command\GameShowCommand;
+use CasinoEngine\Cli\Command\IdempotencyPurgeCommand;
+use CasinoEngine\Cli\Command\SessionExpireCommand;
+use CasinoEngine\Cli\Command\SessionStartCommand;
+use CasinoEngine\Cli\Command\UserCreateCommand;
+use CasinoEngine\Cli\Command\WalletShowCommand;
+use CasinoEngine\Core\Bootstrap;
+use CasinoEngine\Core\Engine;
+
+$autoloadCandidates = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+$loaded = false;
+foreach ($autoloadCandidates as $candidate) {
+    if (is_file($candidate)) {
+        require $candidate;
+        $loaded = true;
+        break;
+    }
+}
+
+if (!$loaded) {
+    fwrite(STDERR, "Composer autoloader not found. Run 'composer install' first.\n");
+    exit(1);
+}
+
+$environment = null;
+foreach ($argv as $argument) {
+    if (str_starts_with($argument, '--env=')) {
+        $environment = substr($argument, 6);
+    }
+}
+
+$engine = Bootstrap::engine(null, $environment);
+
+$application = new Application($engine);
+$application->registerAll([
+    new GameListCommand(),
+    new GameShowCommand(),
+    new DbMigrateCommand(),
+    new DbStatusCommand(),
+    new UserCreateCommand(),
+    new WalletShowCommand(),
+    new SessionStartCommand(),
+    new SessionExpireCommand(),
+    new IdempotencyPurgeCommand(),
+]);
+
+exit($application->run($argv));

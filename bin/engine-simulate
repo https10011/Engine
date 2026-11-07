@@ -1,0 +1,31 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Universal Casino Game Engine — simulation entry point.
+ *
+ * Kept separate from `bin/console` so the simulation harness (and its report
+ * writers) can be deployed or omitted independently of the operator commands.
+ */
+
+use CasinoEngine\Core\Bootstrap;
+use CasinoEngine\Simulation\SimulationConsole;
+
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Composer autoloader not found. Run 'composer install' first.\n");
+    exit(1);
+}
+
+require $autoload;
+
+$environment = null;
+foreach ($argv as $argument) {
+    if (str_starts_with($argument, '--env=')) {
+        $environment = substr($argument, 6);
+    }
+}
+
+exit((new SimulationConsole(Bootstrap::engine(null, $environment)))->run($argv));

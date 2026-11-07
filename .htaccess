@@ -1,0 +1,35 @@
+# Safety net for shared hosting where the document root cannot be moved.
+#
+# The correct deployment points the web server at `public/` so that `src/`,
+# `config/`, `database/`, `storage/` and `tests/` are simply not on the web.
+# Many shared hosts will not let you change the document root, though, and
+# instead serve the project root. This file makes that layout safe: every
+# request is denied at the root and rewritten into `public/`, so private source
+# and configuration are never served even in the fallback arrangement.
+#
+# If you *can* set the document root to `public/`, this file is inert and can
+# be ignored.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Send everything into the public directory, which holds the only
+    # entry point that may be reached from the network.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# If rewriting is unavailable, deny everything rather than risk exposing the
+# source tree. A misconfiguration that returns 403 is far better than one that
+# serves .env or the migration scripts.
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>
+
+# Belt and braces: refuse the file types that must never be fetched.
+<FilesMatch "\.(env|sql|md|json|lock|log|ini|yml|yaml|sh|neon|dist)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(composer\.(json|lock)|phpunit\.xml|\.env.*|.*\.dist)$">
+    Require all denied
+</FilesMatch>

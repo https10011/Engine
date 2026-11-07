@@ -39,6 +39,7 @@ abstract class DatabaseTestCase extends BaseTestCase
         'wallets',
         'user_credentials',
         'api_tokens',
+        'rate_limit_buckets',
         'users',
         'games',
         'audit_log',
@@ -49,6 +50,14 @@ abstract class DatabaseTestCase extends BaseTestCase
         parent::setUp();
 
         $this->engine = Bootstrap::testEngine();
+        $this->engine->container()->instance(ClockInterface::class, new FrozenClock());
+
+        // Pin the RNG seed in the testing environment so a round's outcome is
+        // reproducible. Production never honours a seed (RngFactory refuses),
+        // so this only ever affects tests.
+        $this->engine = \CasinoEngine\Core\Engine::boot(
+            $this->engine->config()->with('engine.rng_seed', 20260101)
+        );
         $this->engine->container()->instance(ClockInterface::class, new FrozenClock());
 
         try {

@@ -9,7 +9,7 @@ use CasinoEngine\Core\Exception\ValidationException;
 use CasinoEngine\Core\Value\Money;
 use CasinoEngine\Persistence\Repository\UserRepository;
 use CasinoEngine\Persistence\Repository\WalletRepository;
-use CasinoEngine\Services\Wallet\WalletServiceInterface;
+use CasinoEngine\Services\Auth\AuthServiceInterface;
 
 final class UserCreateCommand extends AbstractCommand
 {
@@ -25,7 +25,7 @@ final class UserCreateCommand extends AbstractCommand
 
     public function usage(): string
     {
-        return 'user:create --username=<name> [--display="Name"] [--balance=1000.00]';
+        return 'user:create --username=<name> [--display="Name"] [--balance=1000.00] [--password=<secret>]';
     }
 
     public function execute(Engine $engine, array $options): int
@@ -60,6 +60,20 @@ final class UserCreateCommand extends AbstractCommand
         $balance = Money::fromDecimalString((string) $balanceOption, $currency, $scale);
 
         $wallets->createForUser($userId, $currency, $scale, $balance->minorUnits(), $now);
+
+        // A password is optional: the CLI is usable without one, but the HTTP
+        // API needs credentials to issue a token, so accept one here rather
+        // than making the operator run a second command.
+        $password = $this->option($options, 'password');
+        if ($password !== null && $password !== '') {
+            if (strlen($password) < 10) {
+                throw new ValidationException('--password must be at least 10 characters.');
+            }
+
+            /** @var AuthServiceInterface $auth */
+            $auth = $engine->container()->get(AuthServiceInterface::class);
+            $users->setCredentials($userId, $auth->hashPassword($password), PASSWORD_ARGON2ID, $now);
+        }
 
         $this->line(sprintf('Created user #%d (%s) with a balance of %s.', $userId, $username, $balance->format()));
 

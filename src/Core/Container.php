@@ -22,9 +22,13 @@ use CasinoEngine\Persistence\Repository\IdempotencyRepository;
 use CasinoEngine\Persistence\Repository\PayoutRepository;
 use CasinoEngine\Persistence\Repository\RoundRepository;
 use CasinoEngine\Persistence\Repository\SessionRepository;
+use CasinoEngine\Persistence\Repository\RateLimitRepository;
 use CasinoEngine\Persistence\Repository\StatisticsRepository;
+use CasinoEngine\Persistence\Repository\TokenRepository;
 use CasinoEngine\Persistence\Repository\UserRepository;
 use CasinoEngine\Persistence\Repository\WalletRepository;
+use CasinoEngine\Services\Auth\AuthService;
+use CasinoEngine\Services\Auth\AuthServiceInterface;
 use CasinoEngine\Services\Betting\BettingService;
 use CasinoEngine\Services\Betting\BettingServiceInterface;
 use CasinoEngine\Services\History\HistoryService;
@@ -163,6 +167,8 @@ final class Container
             IdempotencyRepository::class,
             StatisticsRepository::class,
             AuditRepository::class,
+            TokenRepository::class,
+            RateLimitRepository::class,
         ] as $class) {
             $this->factories[$class] = $make($class);
         }
@@ -182,6 +188,13 @@ final class Container
 
         $this->factories[BettingServiceInterface::class] = static fn (): BettingServiceInterface
             => new BettingService();
+
+        $this->factories[AuthServiceInterface::class] = fn (self $c): AuthServiceInterface => new AuthService(
+            $c->get(UserRepository::class),
+            $c->get(TokenRepository::class),
+            $c->get(ClockInterface::class),
+            (int) $c->config->get('security.api_token_ttl_seconds', 86400)
+        );
 
         $this->factories[PayoutServiceInterface::class] = static fn (): PayoutServiceInterface
             => new PayoutService();

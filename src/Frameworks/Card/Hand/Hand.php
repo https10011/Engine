@@ -97,11 +97,19 @@ final class Hand implements \JsonSerializable
     }
 
     /** Sum of pip values with every ace counted as 11. */
+    /**
+     * The total with every ace counted as 1.
+     *
+     * An ace is worth 11 in {@see self::blackjackTotal()} where that does not
+     * bust, so a hand is "soft" exactly when the two totals differ. Counting
+     * aces as 11 here as well would make them equal for every hand and report
+     * a soft 17 as hard, which then plays as a stand in games that hit soft 17.
+     */
     public function hardTotal(): int
     {
         $total = 0;
         foreach ($this->cards as $card) {
-            $total += $card->value();
+            $total += $card->isAce() ? 1 : $card->value();
         }
 
         return $total;

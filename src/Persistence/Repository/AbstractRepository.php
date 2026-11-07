@@ -27,7 +27,7 @@ abstract class AbstractRepository
     }
 
     /**
-     * @param array<string, mixed> $parameters
+     * @param array<int|string, mixed> $parameters
      * @return array<string, mixed>|null
      */
     protected function fetchOne(string $sql, array $parameters = []): ?array
@@ -40,7 +40,7 @@ abstract class AbstractRepository
     }
 
     /**
-     * @param array<string, mixed> $parameters
+     * @param array<int|string, mixed> $parameters
      * @return list<array<string, mixed>>
      */
     protected function fetchAll(string $sql, array $parameters = []): array
@@ -54,7 +54,7 @@ abstract class AbstractRepository
         return $rows;
     }
 
-    /** @param array<string, mixed> $parameters */
+    /** @param array<int|string, mixed> $parameters */
     protected function execute(string $sql, array $parameters = []): int
     {
         $statement = $this->pdo()->prepare($sql);
@@ -64,7 +64,7 @@ abstract class AbstractRepository
     }
 
     /**
-     * @param array<string, mixed> $parameters
+     * @param array<int|string, mixed> $parameters
      * @return array<string, mixed>|null
      */
     protected function fetchOneForUpdate(string $sql, array $parameters = []): ?array

@@ -235,8 +235,7 @@ final class SyntheticSlotGame implements GameInterface
             $features[] = new FreeSpinsFeature(
                 $configuration->freeSpinAwards,
                 $configuration->freeSpinsRetrigger,
-                $configuration->freeSpinsCap,
-                $configuration->scatterSymbolId
+                $configuration->freeSpinsCap
             );
         }
 

@@ -157,7 +157,8 @@ final class Container
         $make = static fn (string $class): callable => static fn (self $c): object
             => new $class($c->get(ConnectionInterface::class));
 
-        foreach ([
+        foreach (
+            [
             UserRepository::class,
             WalletRepository::class,
             SessionRepository::class,
@@ -169,7 +170,8 @@ final class Container
             AuditRepository::class,
             TokenRepository::class,
             RateLimitRepository::class,
-        ] as $class) {
+            ] as $class
+        ) {
             $this->factories[$class] = $make($class);
         }
     }
@@ -193,7 +195,8 @@ final class Container
             $c->get(UserRepository::class),
             $c->get(TokenRepository::class),
             $c->get(ClockInterface::class),
-            (int) $c->config->get('security.api_token_ttl_seconds', 86400)
+            (int) $c->config->get('security.api_token_ttl_seconds', 86400),
+            $c->get(AuditRepository::class)
         );
 
         $this->factories[PayoutServiceInterface::class] = static fn (): PayoutServiceInterface

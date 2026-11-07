@@ -32,7 +32,8 @@ final class AuthController extends AbstractController
     {
         $result = $this->auth->login(
             $request->requireString('username'),
-            $request->requireString('password')
+            $request->requireString('password'),
+            $request->clientIp()
         );
 
         $balance = $this->wallet->balance((int) $result['user']['id']);
@@ -65,7 +66,7 @@ final class AuthController extends AbstractController
     {
         $token = $request->bearerToken();
         if ($token !== null) {
-            $this->auth->revoke($token);
+            $this->auth->revoke($token, $request->clientIp());
         }
 
         return Response::noContent();

@@ -30,8 +30,6 @@ final class Logger extends AbstractLogger
     /** @var list<string> */
     private array $redactKeys;
 
-    private ?string $stream = null;
-
     /**
      * @param list<string> $redactKeys Context keys whose values are masked.
      */
@@ -96,7 +94,11 @@ final class Logger extends AbstractLogger
         @fclose($handle);
     }
 
-    /** Substitutes `{placeholder}` tokens from context, PSR-3 style. */
+    /**
+     * Substitutes `{placeholder}` tokens from context, PSR-3 style.
+     *
+     * @param array<string, mixed> $context
+     */
     private function interpolate(string $message, array $context): string
     {
         $replace = [];
@@ -109,7 +111,10 @@ final class Logger extends AbstractLogger
         return strtr($message, $replace);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
     private function redact(array $context): array
     {
         $result = [];

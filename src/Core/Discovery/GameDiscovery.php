@@ -41,10 +41,12 @@ final class GameDiscovery
     /**
      * Registers every discoverable module.
      *
-     * @param callable(GameContext): GameContext|null $contextFactory Builds a
-     *        per-game context (the engine passes one bound to the module's
-     *        metadata). When null, factories are skipped and only direct
-     *        {@see GameInterface} implementations are registered.
+     * @param callable(GameInterface|null): GameContext|null $contextFactory
+     *        Builds a context for a module; during discovery it is called with
+     *        null, because the module does not exist yet and the placeholder
+     *        context only has to carry metadata and configuration. When null,
+     *        factories are skipped and only direct {@see GameInterface}
+     *        implementations are registered.
      *
      * @return list<string> ids registered by this call
      */

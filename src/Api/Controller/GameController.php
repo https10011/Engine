@@ -9,7 +9,6 @@ use CasinoEngine\Api\Http\RequestContext;
 use CasinoEngine\Api\Http\Response;
 use CasinoEngine\Core\Contract\GameCategory;
 use CasinoEngine\Core\Contract\GameMetadataInterface;
-use CasinoEngine\Core\Engine;
 use CasinoEngine\Core\Exception\ValidationException;
 use CasinoEngine\Core\Registry\GameRegistryInterface;
 
@@ -23,10 +22,8 @@ use CasinoEngine\Core\Registry\GameRegistryInterface;
  */
 final class GameController extends AbstractController
 {
-    public function __construct(
-        private readonly Engine $engine,
-        private readonly GameRegistryInterface $registry
-    ) {
+    public function __construct(private readonly GameRegistryInterface $registry)
+    {
     }
 
     /**

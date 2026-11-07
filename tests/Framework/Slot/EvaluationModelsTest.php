@@ -152,7 +152,7 @@ final class EvaluationModelsTest extends TestCase
 
     public function testScatterEvaluatorCountsScattersAnywhere(): void
     {
-        $evaluator = new ScatterEvaluator('S');
+        $evaluator = new ScatterEvaluator();
         $grid = $this->grid([['S', 'A'], ['K', 'S'], ['S', 'Q']]);
 
         $result = $evaluator->evaluate($grid, $this->paytable());
@@ -165,7 +165,7 @@ final class EvaluationModelsTest extends TestCase
     {
         $composite = new CompositeEvaluator(
             new PaylineEvaluator([[0, 0, 0]]),
-            new ScatterEvaluator('S')
+            new ScatterEvaluator()
         );
 
         $grid = $this->grid([['A', 'S'], ['A', 'K'], ['A', 'S']]);

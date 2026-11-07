@@ -17,7 +17,7 @@ use CasinoEngine\Core\Exception\ConfigurationException;
 final class SlotConfiguration implements GameConfigurationInterface
 {
     /**
-     * @param array<string, int> $betLevels available bet multipliers
+     * @param list<int> $betLevels available bet multipliers
      */
     public function __construct(
         public readonly int $coinValueMinor = 100,

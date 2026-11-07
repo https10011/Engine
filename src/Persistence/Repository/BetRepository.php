@@ -27,13 +27,14 @@ final class BetRepository extends AbstractRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function listForUser(int $userId, int $limit = 50): array
+    public function listForUser(int $userId, int $limit = 50, int $offset = 0): array
     {
         $limit = max(1, min($limit, 500));
+        $offset = max(0, $offset);
 
         return $this->fetchAll(
             'SELECT b.id, b.round_id, b.amount_minor, b.currency, b.label, b.created_at
-             FROM bets b WHERE b.user_id = ? ORDER BY b.id DESC LIMIT ' . $limit,
+             FROM bets b WHERE b.user_id = ? ORDER BY b.id DESC LIMIT ' . $limit . ' OFFSET ' . $offset,
             [$userId]
         );
     }

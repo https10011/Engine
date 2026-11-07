@@ -62,6 +62,7 @@ final class RouletteTest extends TestCase
         yield 'column returns 3x' => [BetType::Column, ['1', '4', '7', '10', '13', '16', '19', '22', '25', '28', '31', '34'], '1', 300];
     }
 
+    /** @param list<string> $numbers */
     #[DataProvider('payouts')]
     public function testSettlementPayout(BetType $type, array $numbers, string $pocket, int $expectedMinor): void
     {

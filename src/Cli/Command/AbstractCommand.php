@@ -7,6 +7,7 @@ namespace CasinoEngine\Cli\Command;
 /** Convenience helpers shared by commands. */
 abstract class AbstractCommand implements CommandInterface
 {
+    /** @param array<string, mixed> $options */
     protected function option(array $options, string $key, ?string $default = null): ?string
     {
         $value = $options[$key] ?? $default;
@@ -14,6 +15,7 @@ abstract class AbstractCommand implements CommandInterface
         return is_scalar($value) ? (string) $value : $default;
     }
 
+    /** @param array<string, mixed> $options */
     protected function intOption(array $options, string $key, int $default): int
     {
         $value = $options[$key] ?? null;
@@ -21,6 +23,7 @@ abstract class AbstractCommand implements CommandInterface
         return is_numeric($value) ? (int) $value : $default;
     }
 
+    /** @param array<string, mixed> $options */
     protected function boolOption(array $options, string $key): bool
     {
         $value = $options[$key] ?? false;

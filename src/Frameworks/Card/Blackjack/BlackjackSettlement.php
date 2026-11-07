@@ -66,7 +66,9 @@ final class BlackjackSettlement
                 BlackjackOutcome::PLAYER_BLACKJACK,
                 $playerTotal,
                 $dealerTotal,
-                true, $wasSplit);
+                true,
+                $wasSplit
+            );
         }
 
         if ($dealerNatural && !$playerNatural) {
@@ -74,7 +76,9 @@ final class BlackjackSettlement
                 BlackjackOutcome::DEALER_BLACKJACK,
                 $playerTotal,
                 $dealerTotal,
-                false, $wasSplit);
+                false,
+                $wasSplit
+            );
         }
 
         if ($playerNatural && $dealerNatural) {

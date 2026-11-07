@@ -82,5 +82,9 @@ return [
         'api_rate_limit_per_minute' => 120,
         'api_max_body_bytes'        => 65536,
         'idempotency_ttl_seconds'   => 86400,
+        // Retention windows for the `*:purge` cron commands. Kept here so an
+        // operator tunes them by environment variable, not by editing SQL.
+        'audit_retention_days'      => 90,
+        'rate_limit_retention_days' => 7,
     ],
 ];

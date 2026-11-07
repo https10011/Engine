@@ -31,6 +31,7 @@ final class FeatureStep
     ) {
     }
 
+    /** @param array<string, mixed> $state */
     public static function idle(array $state = []): self
     {
         return new self($state);

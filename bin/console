@@ -13,13 +13,16 @@ declare(strict_types=1);
  */
 
 use CasinoEngine\Cli\Application;
+use CasinoEngine\Cli\Command\AuditPurgeCommand;
 use CasinoEngine\Cli\Command\DbMigrateCommand;
 use CasinoEngine\Cli\Command\DbStatusCommand;
 use CasinoEngine\Cli\Command\GameListCommand;
 use CasinoEngine\Cli\Command\GameShowCommand;
 use CasinoEngine\Cli\Command\IdempotencyPurgeCommand;
 use CasinoEngine\Cli\Command\SessionExpireCommand;
+use CasinoEngine\Cli\Command\RateLimitPurgeCommand;
 use CasinoEngine\Cli\Command\SessionStartCommand;
+use CasinoEngine\Cli\Command\TokenPurgeCommand;
 use CasinoEngine\Cli\Command\UserCreateCommand;
 use CasinoEngine\Cli\Command\WalletShowCommand;
 use CasinoEngine\Core\Bootstrap;
@@ -64,6 +67,9 @@ $application->registerAll([
     new SessionStartCommand(),
     new SessionExpireCommand(),
     new IdempotencyPurgeCommand(),
+    new TokenPurgeCommand(),
+    new AuditPurgeCommand(),
+    new RateLimitPurgeCommand(),
 ]);
 
 exit($application->run($argv));

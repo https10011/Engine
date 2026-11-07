@@ -71,6 +71,10 @@ enum BetType: string
     }
 
     /** Numbers a bet covers. Used for validation and for a coverage report. */
+    /**
+     * @param list<string> $numbers
+     * @return list<string>
+     */
     public function covers(array $numbers): array
     {
         return $numbers;

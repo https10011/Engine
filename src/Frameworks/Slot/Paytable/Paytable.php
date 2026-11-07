@@ -19,7 +19,7 @@ final class Paytable
 {
     /**
      * @param array<string, array<int, int>> $payouts symbol id => count => units
-     * @param array<string, int> $scatterPayouts scatter id => count => units
+     * @param array<string, array<int, int>> $scatterPayouts scatter id => count => units
      */
     public function __construct(
         private readonly array $payouts,

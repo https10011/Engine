@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<ruleset name="Universal Casino Game Engine">
+    <description>
+        PSR-12 is the baseline. The extra rules catch the two things that
+        matter most in an engine that moves money: a statement that silently
+        does nothing, and a line longer than the rest of the file.
+    </description>
+
+    <file>src</file>
+    <file>tests</file>
+    <file>bin</file>
+    <file>public</file>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="ps"/>
+    <arg name="parallel" value="8"/>
+
+    <rule ref="PSR12">
+        <!-- The engine uses 4-space indents, which PSR-12 requires. -->
+        <exclude name="PSR12.Files.FileHeader"/>
+    </rule>
+
+    <!-- PSR-12 treats 120 columns as a soft limit and 160 as the hard one.
+         This codebase stays under 160, so 160 is the gate; the tighter 120
+         target is a review preference, not a build failure. -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="160"/>
+            <property name="absoluteLineLimit" value="0"/>
+        </properties>
+    </rule>
+
+    <rule ref="Generic.CodeAnalysis.EmptyStatement"/>
+    <rule ref="Generic.CodeAnalysis.UnconditionalIfStatement"/>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+        <!-- An interface method may accept a parameter it does not use. -->
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace"/>
+    <rule ref="Generic.PHP.DisallowShortOpenTag"/>
+    <rule ref="Generic.PHP.DisallowRequestSuperglobal"/>
+</ruleset>

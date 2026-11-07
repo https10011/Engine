@@ -64,6 +64,7 @@ final class CardAndBlackjackTest extends TestCase
         yield 'ace demoted to avoid bust is hard 21' => [['AS', 'KH', 'QD'], 21, false];
     }
 
+    /** @param list<string> $codes */
     #[DataProvider('handTotals')]
     public function testHandTotalAndSoftness(array $codes, int $total, bool $soft): void
     {

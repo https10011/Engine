@@ -104,6 +104,8 @@ final class Config
             'API_RATE_LIMIT_PER_MINUTE'   => 'security.api_rate_limit_per_minute',
             'API_MAX_BODY_BYTES'          => 'security.api_max_body_bytes',
             'IDEMPOTENCY_TTL_SECONDS'     => 'security.idempotency_ttl_seconds',
+            'AUDIT_RETENTION_DAYS'        => 'security.audit_retention_days',
+            'RATE_LIMIT_RETENTION_DAYS'   => 'security.rate_limit_retention_days',
         ];
 
         $path = $map[$envKey] ?? null;

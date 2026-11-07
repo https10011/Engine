@@ -7,6 +7,7 @@ namespace CasinoEngine\Services\Auth;
 use CasinoEngine\Core\Contract\Service\ClockInterface;
 use CasinoEngine\Core\Exception\AuthenticationException;
 use CasinoEngine\Core\Exception\ValidationException;
+use CasinoEngine\Persistence\Repository\AuditRepository;
 use CasinoEngine\Persistence\Repository\TokenRepository;
 use CasinoEngine\Persistence\Repository\UserRepository;
 
@@ -32,11 +33,12 @@ final class AuthService implements AuthServiceInterface
         private readonly UserRepository $users,
         private readonly TokenRepository $tokens,
         private readonly ClockInterface $clock,
-        private readonly int $tokenTtlSeconds = 86400
+        private readonly int $tokenTtlSeconds = 86400,
+        private readonly ?AuditRepository $audit = null
     ) {
     }
 
-    public function login(string $username, string $password): array
+    public function login(string $username, string $password, ?string $ipAddress = null): array
     {
         $username = trim($username);
         if ($username === '' || $password === '') {
@@ -48,13 +50,17 @@ final class AuthService implements AuthServiceInterface
             // A dummy verify keeps the timing of an unknown user close to that
             // of a known one with a wrong password.
             password_verify($password, '$argon2id$v=19$m=65536,t=4,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+            $this->audit('auth.login.failed', null, $username, $ipAddress);
             throw new AuthenticationException('Invalid username or password.');
         }
 
         $credentials = $this->users->findCredentials((int) $user['id']);
         if ($credentials === null || !password_verify($password, (string) $credentials['password_hash'])) {
+            $this->audit('auth.login.failed', (int) $user['id'], $username, $ipAddress);
             throw new AuthenticationException('Invalid username or password.');
         }
+
+        $this->audit('auth.login.succeeded', (int) $user['id'], $username, $ipAddress);
 
         return [
             'user'  => $this->publicUser($user),
@@ -101,24 +107,39 @@ final class AuthService implements AuthServiceInterface
         return $this->publicUser($user);
     }
 
-    public function revoke(string $presentedToken): void
+    public function revoke(string $presentedToken, ?string $ipAddress = null): void
     {
         $this->tokens->revokeByHash($this->hash(trim($presentedToken)), $this->clock->now()->format('Y-m-d H:i:s'));
+        $this->audit('auth.token.revoked', null, null, $ipAddress);
     }
 
     public function hashPassword(string $plaintext): string
     {
-        $hash = password_hash($plaintext, PASSWORD_ARGON2ID);
-        if ($hash === false) {
-            throw new ValidationException('The password could not be hashed.');
-        }
-
-        return $hash;
+        return password_hash($plaintext, PASSWORD_ARGON2ID);
     }
 
     private function hash(string $token): string
     {
         return hash('sha256', $token);
+    }
+
+    /**
+     * Records a security-relevant event.
+     *
+     * The password and the token are deliberately absent from the context: an
+     * audit row must never become a second place a credential is stored. A
+     * failed login records the attempted username, which is what makes
+     * credential stuffing visible.
+     */
+    private function audit(string $event, ?int $userId, ?string $username, ?string $ipAddress): void
+    {
+        $this->audit?->record(
+            $userId,
+            $event,
+            $username === null ? [] : ['username' => $username],
+            $ipAddress,
+            $this->clock->now()->format('Y-m-d H:i:s')
+        );
     }
 
     /**

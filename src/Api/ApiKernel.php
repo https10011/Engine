@@ -54,7 +54,8 @@ final class ApiKernel
             $container->get(\CasinoEngine\Persistence\Repository\UserRepository::class),
             $container->get(\CasinoEngine\Persistence\Repository\TokenRepository::class),
             $container->get(ClockInterface::class),
-            (int) $this->engine->config()->get('security.api_token_ttl_seconds', 86400)
+            (int) $this->engine->config()->get('security.api_token_ttl_seconds', 86400),
+            $container->get(\CasinoEngine\Persistence\Repository\AuditRepository::class)
         );
 
         $router->use('auth', new AuthMiddleware($auth));
@@ -106,10 +107,7 @@ final class ApiKernel
 
     private function registerGameRoutes(Router $router, \CasinoEngine\Core\Container $container): void
     {
-        $controller = new GameController(
-            $this->engine,
-            $container->get(GameRegistryInterface::class)
-        );
+        $controller = new GameController($container->get(GameRegistryInterface::class));
 
         $router->add(new Route('GET', '/api/v1/games', $controller->index(...)));
         $router->add(new Route('GET', '/api/v1/games/{gameId}', $controller->show(...)));

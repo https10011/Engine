@@ -152,7 +152,9 @@ final class Hand implements \JsonSerializable
         return $total !== $hard && $total <= 21;
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * @return array{cards: list<array<string, mixed>>, total: int, soft: bool}
+     */
     public function jsonSerialize(): array
     {
         return [

@@ -90,10 +90,10 @@ final class WalletIntegrityTest extends DatabaseTestCase
 
         // An invalid action fails inside the transaction.
         try {
-            $this->engine->rounds()->execute($session, GameAction::create('not-a-real-action'), 'fail-key');
+            $this->engine->rounds()->execute($session, GameAction::create('cash_out'), 'fail-key');
             self::fail('The invalid action should have failed.');
-        } catch (\Throwable) {
-            // Expected.
+        } catch (\CasinoEngine\Core\Exception\GameRuleException $e) {
+            self::assertStringContainsString('cash_out', $e->getMessage());
         }
 
         // The same key must be reusable after the failure.
@@ -114,8 +114,9 @@ final class WalletIntegrityTest extends DatabaseTestCase
 
         try {
             $this->engine->rounds()->execute($session, GameAction::withBet('spin', Money::of(999999)));
-        } catch (\Throwable) {
-            // Expected: bet exceeds the game maximum.
+            self::fail('A bet above the maximum should have been rejected.');
+        } catch (\CasinoEngine\Core\Exception\InvalidBetException $e) {
+            self::assertSame('INVALID_BET', $e->errorCode());
         }
 
         self::assertSame($roundsBefore, (int) $pdo->query('SELECT COUNT(*) FROM game_rounds')->fetchColumn());
@@ -136,8 +137,9 @@ final class WalletIntegrityTest extends DatabaseTestCase
         foreach ([$this->openSession($userId), $this->openSession($userId)] as $session) {
             try {
                 $this->engine->rounds()->execute($session, GameAction::withBet('spin', Money::of(100)));
-            } catch (\CasinoEngine\Core\Exception\InsufficientFundsException) {
+            } catch (\CasinoEngine\Core\Exception\InsufficientFundsException $e) {
                 // Expected whenever the balance has already been spent.
+                self::assertSame('INSUFFICIENT_FUNDS', $e->errorCode());
             }
         }
 

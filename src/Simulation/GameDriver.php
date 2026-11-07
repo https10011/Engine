@@ -68,8 +68,8 @@ final class GameDriver
      * statistics comparable across games: one observation per round, whatever
      * the round is made of.
      *
-     * @param callable(GameStateInterface, int, int): GameAction $actionFactory
-     *        Receives the state, the action sequence number and the round index.
+     * The first action is supplied by the caller; later actions in a
+     * multi-step round come from the driver's own strategy.
      */
     public function playRound(
         GameStateInterface &$state,
@@ -158,7 +158,7 @@ final class GameDriver
         return $remaining > 0 ? GameAction::create('spin') : null;
     }
 
-    private function cardContinuation(GameStateInterface $state, GameAction $previous): ?GameAction
+    private function cardContinuation(GameStateInterface $state, GameAction $previous): GameAction
     {
         return GameAction::create($this->blackjackDecision($state));
     }

@@ -24,16 +24,6 @@ final class IdempotencyRepository extends AbstractRepository
         );
     }
 
-    /** @return array<string, mixed>|null */
-    public function lock(int $userId, string $gameId, string $keyHash): ?array
-    {
-        return $this->fetchOneForUpdate(
-            'SELECT id, request_fingerprint, status, response, round_id, expires_at
-             FROM idempotency_keys WHERE user_id = ? AND game_id = ? AND key_hash = ?',
-            [$userId, $gameId, $keyHash]
-        );
-    }
-
     public function claim(
         int $userId,
         string $gameId,

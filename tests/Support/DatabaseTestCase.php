@@ -93,6 +93,8 @@ abstract class DatabaseTestCase extends BaseTestCase
             } catch (Throwable) {
                 // A table that does not exist yet is not a failure: the
                 // migration list is the source of truth and this is a reset.
+                // The list is hand-maintained, so an extra entry is tolerated.
+                continue;
             }
         }
         $pdo->exec('SET FOREIGN_KEY_CHECKS=1');

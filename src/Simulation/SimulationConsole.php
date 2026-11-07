@@ -178,9 +178,6 @@ final class SimulationConsole
             \CasinoEngine\Core\Contract\GameCategory::Slot     => GameAction::withBet('spin', $bet),
             \CasinoEngine\Core\Contract\GameCategory::Card     => GameAction::withBet('deal', $bet),
             \CasinoEngine\Core\Contract\GameCategory::Roulette => GameAction::withBet('spin', $bet, $this->rouletteBets($game, $bet)),
-            default => throw new ValidationException(
-                'No simulation strategy is defined for this game category.'
-            ),
         };
     }
 

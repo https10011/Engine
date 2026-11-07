@@ -71,11 +71,19 @@ final class ApiTest extends DatabaseTestCase
     }
 
     /** @param array<string, mixed> $body */
+    /**
+     * @param array<string, mixed> $body
+     * @param array<string, string> $headers
+     */
     private function post(string $path, array $body = [], array $headers = []): Response
     {
         return $this->kernel->handle(new Request('POST', $path, $headers, [], $body));
     }
 
+    /**
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $query
+     */
     private function get(string $path, array $headers = [], array $query = []): Response
     {
         return $this->kernel->handle(new Request('GET', $path, $headers, $query));
@@ -85,6 +93,16 @@ final class ApiTest extends DatabaseTestCase
     private function auth(): array
     {
         return ['authorization' => 'Bearer ' . $this->token];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function auditRows(): array
+    {
+        $connection = $this->engine->container()->get(\CasinoEngine\Core\Database\ConnectionInterface::class);
+
+        return $connection->pdo()
+            ->query('SELECT user_id, event, context, ip_address FROM audit_log ORDER BY id DESC')
+            ->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     private function startSlotSession(): string
@@ -358,6 +376,29 @@ final class ApiTest extends DatabaseTestCase
             self::assertStringContainsString($mine, (string) $transaction['reference']);
             self::assertStringNotContainsString($theirs, (string) $transaction['reference']);
         }
+    }
+
+    public function testASuccessfulLoginIsRecordedInTheAuditTrail(): void
+    {
+        $rows = $this->auditRows();
+
+        self::assertNotEmpty($rows);
+        $latest = $rows[0];
+        self::assertSame('auth.login.succeeded', $latest['event']);
+        self::assertSame($this->userId, (int) $latest['user_id']);
+        self::assertSame('apiuser', json_decode((string) $latest['context'], true)['username']);
+    }
+
+    public function testAFailedLoginIsRecordedWithoutStoringThePassword(): void
+    {
+        $this->post('/api/v1/auth/login', ['username' => 'apiuser', 'password' => 'wrong-password']);
+
+        $rows = $this->auditRows();
+        self::assertSame('auth.login.failed', $rows[0]['event']);
+
+        // The audit row must never become a second place a credential lives.
+        $serialised = json_encode($rows);
+        self::assertStringNotContainsString('wrong-password', (string) $serialised);
     }
 
     public function testLogoutRevokesTheToken(): void

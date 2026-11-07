@@ -21,7 +21,10 @@ final class Env
     {
         $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
 
-        if ($value === false || $value === null || $value === '') {
+        // getenv() yields false for an unset variable; the array lookups yield
+        // null. Both mean "not set", and an empty string is treated the same
+        // way so that a blank line in a .env file does not shadow the default.
+        if (!is_string($value) || $value === '') {
             return self::$fileValues[$key] ?? $default;
         }
 
@@ -60,6 +63,7 @@ final class Env
      * Reads a comma-separated list. Surrounding quotes are stripped so that
      * `FOO="a, b"` behaves the same as `FOO=a, b`.
      *
+     * @param list<string> $default
      * @return list<string>
      */
     public static function list(string $key, array $default = []): array

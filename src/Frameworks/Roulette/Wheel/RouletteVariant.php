@@ -21,7 +21,8 @@ final class RouletteVariant
 
     /**
      * @param list<string> $pocketOrder Clockwise pocket order, e.g. `['0','32','15',...]`
-     * @param array<string, string> $colours pocket => 'red'|'black'|'green'
+     * @param array<int|string, string> $colours pocket => 'red'|'black'|'green'
+     *        (PHP stores the pocket '0' under the integer key 0)
      */
     public function __construct(
         private readonly string $name,
@@ -50,7 +51,10 @@ final class RouletteVariant
         return new self(self::FRENCH, self::EUROPEAN_ORDER, self::europeanColours(), true, true);
     }
 
-    /** @param list<string> $order */
+    /**
+     * @param list<string> $order
+     * @param array<int|string, string> $colours
+     */
     public static function custom(string $name, array $order, array $colours): self
     {
         return new self($name, $order, $colours);
@@ -137,16 +141,16 @@ final class RouletteVariant
         '19', '31', '18', '6', '21', '33', '16', '4', '23', '35', '14', '2',
     ];
 
-    /** @return array<string, string> */
+    /** @return array<int|string, string> */
     private static function europeanColours(): array
     {
-        return self::coloursFor([0], false);
+        return self::coloursFor(false);
     }
 
-    /** @return array<string, string> */
+    /** @return array<int|string, string> */
     private static function americanColours(): array
     {
-        return self::coloursFor([0], true);
+        return self::coloursFor(true);
     }
 
     /**
@@ -154,12 +158,14 @@ final class RouletteVariant
      * from a table rather than hardcoding 37 entries makes it verifiable
      * against the published layout.
      *
-     * @param list<int> $zeroValues
-     * @return array<string, string>
+     * @return array<int|string, string> pocket label => colour name. PHP
+     *         stores the pocket written '0' under the integer key 0.
      */
-    private static function coloursFor(array $zeroValues, bool $doubleZero): array
+    private static function coloursFor(bool $doubleZero): array
     {
         $reds = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+        /** @var array<int|string, string> $colours */
         $colours = [];
 
         foreach ($reds as $number) {

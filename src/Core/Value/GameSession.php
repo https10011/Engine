@@ -90,7 +90,7 @@ final class GameSession implements GameSessionInterface
         );
     }
 
-    public function withRoundCount(int $roundCount, DateTimeImmutable $updatedAt): self
+    public function withRoundCount(int $roundCount, DateTimeImmutable $updatedAt): static
     {
         return new self(
             $this->id,

@@ -14,7 +14,6 @@ namespace CasinoEngine\Persistence\Repository;
  */
 final class TokenRepository extends AbstractRepository
 {
-    /** @param array<string, mixed> $row */
     public function create(int $userId, string $tokenHash, string $expiresAt, string $now): int
     {
         $this->execute(

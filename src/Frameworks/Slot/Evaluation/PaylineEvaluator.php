@@ -20,8 +20,10 @@ use CasinoEngine\Frameworks\Slot\Paytable\Paytable;
  *  - `$leftToRightOnly`: almost all payline games pay only runs anchored at
  *    reel 0, but some also pay right-to-left runs. Left-to-right is the default
  *    because paying both ways without saying so would double a game's RTP.
- *  - `$wildSubstitutesForScatter`: off by default. A wild that also counts as a
- *    scatter is unusual and would otherwise inflate scatter frequency.
+ *
+ * Scatters are not this evaluator's concern: they pay by total count anywhere
+ * on the grid, which is {@see ScatterEvaluator}'s job. A game that wants both
+ * composes the two with {@see CompositeEvaluator}.
  */
 final class PaylineEvaluator implements GridEvaluatorInterface
 {
@@ -30,8 +32,7 @@ final class PaylineEvaluator implements GridEvaluatorInterface
      */
     public function __construct(
         private readonly array $paylines,
-        private readonly bool $leftToRightOnly = true,
-        private readonly bool $wildSubstitutesForScatter = false
+        private readonly bool $leftToRightOnly = true
     ) {
         foreach ($paylines as $index => $payline) {
             if ($payline === []) {
@@ -201,8 +202,10 @@ final class PaylineEvaluator implements GridEvaluatorInterface
         $count = 0;
         foreach ($grid->cells() as $column) {
             foreach ($column as $symbolId) {
-                if ($grid->symbolSet()->get($symbolId)->type
-                    === \CasinoEngine\Frameworks\Slot\Symbol\SymbolType::Bonus) {
+                if (
+                    $grid->symbolSet()->get($symbolId)->type
+                    === \CasinoEngine\Frameworks\Slot\Symbol\SymbolType::Bonus
+                ) {
                     $count++;
                 }
             }

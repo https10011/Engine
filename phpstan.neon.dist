@@ -1,0 +1,16 @@
+# PHPStan configuration.
+#
+# Level 6 is the strictest level the engine passes without suppressing real
+# problems. Higher levels mostly complain about the deliberately loose `array`
+# shape of a decoded JSON body, which is validated at the boundary rather than
+# typed in the middle of the engine.
+
+parameters:
+    level: 6
+    paths:
+        - src
+        - tests
+    excludePaths:
+        - vendor
+    tmpDir: .phpstan.cache
+    treatPhpDocTypesAsCertain: false

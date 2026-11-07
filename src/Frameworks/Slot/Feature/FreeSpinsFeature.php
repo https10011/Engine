@@ -27,8 +27,7 @@ final class FreeSpinsFeature implements FeatureInterface
     public function __construct(
         private readonly array $awardTable,
         private readonly bool $retrigger = true,
-        private readonly int $retriggerCap = 200,
-        private readonly string $scatterSymbolId = 'SCATTER'
+        private readonly int $retriggerCap = 200
     ) {
     }
 

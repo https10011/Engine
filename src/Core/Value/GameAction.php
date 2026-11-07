@@ -28,7 +28,11 @@ final class GameAction implements GameActionInterface
         return new self($name, $payload, $bet);
     }
 
-    /** Convenience for a money-moving action. */
+    /**
+     * Convenience for a money-moving action.
+     *
+     * @param array<string, mixed> $payload
+     */
     public static function withBet(string $name, Money $bet, array $payload = []): self
     {
         return self::create($name, $payload, $bet);

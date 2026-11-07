@@ -25,4 +25,21 @@ final class AuditRepository extends AbstractRepository
             'SELECT id, user_id, event, context, ip_address, created_at FROM audit_log ORDER BY id DESC LIMIT ' . $limit
         );
     }
+
+    /** @return list<array<string, mixed>> */
+    public function forEvent(string $event, int $limit = 100): array
+    {
+        $limit = max(1, min($limit, 1000));
+
+        return $this->fetchAll(
+            'SELECT id, user_id, event, context, ip_address, created_at
+             FROM audit_log WHERE event = ? ORDER BY id DESC LIMIT ' . $limit,
+            [$event]
+        );
+    }
+
+    public function purgeOlderThan(string $cutoff): int
+    {
+        return $this->execute('DELETE FROM audit_log WHERE created_at < ?', [$cutoff]);
+    }
 }

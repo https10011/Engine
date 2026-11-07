@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CasinoEngine\Frameworks\Slot\Feature;
 
 use CasinoEngine\Core\Contract\FeatureTransition;
+use CasinoEngine\Core\Exception\ConfigurationException;
 use CasinoEngine\Frameworks\Slot\Grid\Grid;
 
 /**
@@ -24,10 +25,20 @@ use CasinoEngine\Frameworks\Slot\Grid\Grid;
  */
 final class CascadeFeature implements FeatureInterface
 {
+    /** Strategies this feature implements. Anything else is a configuration error. */
+    public const REFILL_STRATEGIES = ['reel_strip'];
+
     public function __construct(
         private readonly int $maximumCascades = 20,
         private readonly string $refillStrategy = 'reel_strip'
     ) {
+        if (!in_array($refillStrategy, self::REFILL_STRATEGIES, true)) {
+            throw new ConfigurationException(sprintf(
+                "Unknown cascade refill strategy '%s'. Supported: %s.",
+                $refillStrategy,
+                implode(', ', self::REFILL_STRATEGIES)
+            ));
+        }
     }
 
     public function type(): string

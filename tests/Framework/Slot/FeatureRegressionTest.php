@@ -48,6 +48,10 @@ final class FeatureRegressionTest extends TestCase
         return Grid::fromCells($cells, $this->symbols);
     }
 
+    /**
+     * @param array<string, mixed> $config
+     * @param array<string, mixed> $state
+     */
     private function winContext(Grid $grid, array $state = [], bool $freeSpin = false, array $config = []): FeatureContext
     {
         $evaluation = (new PaylineEvaluator([[0, 0, 0]]))->evaluate($grid, $this->paytable());

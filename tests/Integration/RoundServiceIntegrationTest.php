@@ -99,8 +99,8 @@ final class RoundServiceIntegrationTest extends DatabaseTestCase
         try {
             $this->engine->rounds()->execute($session, GameAction::withBet('spin', Money::of(1)));
             self::fail('A bet below the minimum should have been rejected.');
-        } catch (\CasinoEngine\Core\Exception\InvalidBetException) {
-            // Expected.
+        } catch (\CasinoEngine\Core\Exception\InvalidBetException $e) {
+            self::assertSame('INVALID_BET', $e->errorCode());
         }
 
         self::assertSame($before, $this->engine->wallet()->balance($userId)->minorUnits());
@@ -117,8 +117,8 @@ final class RoundServiceIntegrationTest extends DatabaseTestCase
         try {
             $this->engine->rounds()->execute($session, GameAction::withBet('spin', Money::of(100)));
             self::fail('A wager larger than the balance should have been rejected.');
-        } catch (\CasinoEngine\Core\Exception\InsufficientFundsException) {
-            // Expected.
+        } catch (\CasinoEngine\Core\Exception\InsufficientFundsException $e) {
+            self::assertSame('INSUFFICIENT_FUNDS', $e->errorCode());
         }
 
         self::assertSame(50, $this->engine->wallet()->balance($userId)->minorUnits());

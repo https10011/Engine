@@ -163,7 +163,7 @@ final class MigrationRunner
         $files = glob(rtrim($this->migrationsDirectory, '/') . '/*.sql') ?: [];
         sort($files, SORT_STRING);
 
-        return array_values($files);
+        return $files;
     }
 
     private function versionFromFilename(string $path): string

@@ -42,6 +42,10 @@ final class Response
         return new self($status, $data, null, $meta);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $meta
+     */
     public static function created(array $data, array $meta = []): self
     {
         return new self(201, $data, null, $meta);

@@ -19,7 +19,7 @@ interface AuthServiceInterface
      * @return array{user:array<string,mixed>,token:array{token:string,expires_at:string}}
      * @throws \CasinoEngine\Core\Exception\AuthenticationException
      */
-    public function login(string $username, string $password): array;
+    public function login(string $username, string $password, ?string $ipAddress = null): array;
 
     /**
      * Issues a token for an already-authenticated user.
@@ -36,7 +36,7 @@ interface AuthServiceInterface
      */
     public function authenticate(string $presentedToken): array;
 
-    public function revoke(string $presentedToken): void;
+    public function revoke(string $presentedToken, ?string $ipAddress = null): void;
 
     /** Produces a password hash suitable for storage. */
     public function hashPassword(string $plaintext): string;

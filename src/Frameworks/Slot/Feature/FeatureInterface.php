@@ -27,8 +27,8 @@ interface FeatureInterface
     public function type(): string;
 
     /**
-     * @param array<string, mixed> $state Feature state carried on the session
-     * @return FeatureStep Result of consulting the feature for this spin
+     * @return FeatureStep Result of consulting the feature for this spin. The
+     *         step carries any feature state that must survive to the session.
      */
     public function apply(FeatureContext $context): FeatureStep;
 }

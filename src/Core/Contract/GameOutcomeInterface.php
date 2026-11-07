@@ -28,6 +28,18 @@ interface GameOutcomeInterface
      */
     public function payoutMultiplier(): Ratio;
 
+    /**
+     * The stake this outcome's multipliers apply to.
+     *
+     * Most games return `null`, meaning "use the bet submitted with the
+     * action". A game whose round spans several actions (blackjack: deal, then
+     * hit or stand) returns the stake the round was opened with, so a
+     * completing action that carries no new bet still settles against the
+     * original wager. The amount comes from the module's own recorded state,
+     * never from the request, so a client cannot inflate it.
+     */
+    public function stakeBasis(): ?\CasinoEngine\Core\Value\Money;
+
     /** Game-specific payload for the frontend and the history record. */
     public function detail(): GameOutcomeDetailInterface;
 

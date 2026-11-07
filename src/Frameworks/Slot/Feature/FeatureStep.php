@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CasinoEngine\Frameworks\Slot\Feature;
 
 use CasinoEngine\Core\Contract\FeatureTransition;
+use CasinoEngine\Frameworks\Slot\Grid\Grid;
 
 /**
  * A feature's answer for one spin.

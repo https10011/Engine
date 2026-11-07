@@ -19,6 +19,15 @@ use CasinoEngine\Persistence\Repository\SessionRepository;
 
 final class SessionService implements SessionServiceInterface
 {
+    /**
+     * Every DATETIME column is written and read as UTC.
+     *
+     * Without a single convention a session written by a UTC clock would be
+     * read back in the application's display timezone and appear to have
+     * expired hours ago, so the instant stored in the row and the instant the
+     * clock returns must share one zone.
+     */
+
     public function __construct(
         private readonly SessionRepository $sessions,
         private readonly ClockInterface $clock,
@@ -159,6 +168,19 @@ final class SessionService implements SessionServiceInterface
     }
 
     /**
+     * Parses a DATETIME column.
+     *
+     * Every DATETIME is written and read as UTC. Without one convention a
+     * session written by the UTC clock would be read back in the application's
+     * display timezone and appear to have expired hours ago, so the instant
+     * stored in the row and the instant the clock returns must share a zone.
+     */
+    private static function dbTime(string $value): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable($value, new \DateTimeZone('UTC'));
+    }
+
+    /**
      * Rebuilds a session from a database row.
      *
      * The concrete state class is supplied by the game module at load time, so
@@ -187,9 +209,9 @@ final class SessionService implements SessionServiceInterface
             $state,
             SessionStatus::from((string) $row['status']),
             (int) $row['round_count'],
-            new \DateTimeImmutable((string) $row['created_at']),
-            new \DateTimeImmutable((string) $row['updated_at']),
-            new \DateTimeImmutable((string) $row['expires_at'])
+            self::dbTime((string) $row['created_at']),
+            self::dbTime((string) $row['updated_at']),
+            self::dbTime((string) $row['expires_at'])
         );
     }
 }

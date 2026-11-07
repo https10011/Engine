@@ -34,13 +34,24 @@ final class Config
     {
         $items = [];
         foreach (glob(rtrim($configPath, '/') . '/*.php') ?: [] as $file) {
-            $section = basename($file, '.php');
             /** @var mixed $value */
             $value = require $file;
             if (!is_array($value)) {
                 throw new ConfigurationException("Config file '$file' must return an array.");
             }
-            $items[$section] = $value;
+
+            // Each file returns its own named sections (for example
+            // `['app' => [...], 'database' => [...]]`), so the sections are
+            // merged at the top level. Nesting them under the file's basename
+            // would turn `database.host` into `app.database.host` and every
+            // dot-path lookup would miss.
+            foreach ($value as $section => $sectionValue) {
+                if (isset($items[$section]) && is_array($items[$section]) && is_array($sectionValue)) {
+                    $items[$section] = array_replace_recursive($items[$section], $sectionValue);
+                    continue;
+                }
+                $items[$section] = $sectionValue;
+            }
         }
 
         $config = new self($items);

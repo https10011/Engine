@@ -39,6 +39,20 @@ interface GameInterface
     public function createInitialState(GameContext $context): GameStateInterface;
 
     /**
+     * Rebuilds the module's typed state from a stored snapshot.
+     *
+     * The session service persists state as an opaque array so it never needs
+     * to know what a reel or a hand is. This method is the module's half of
+     * that contract: the engine hands back exactly what `toArray()` produced,
+     * and the module returns its own state object.
+     *
+     * @param array<string, mixed> $data
+     * @throws \CasinoEngine\Core\Exception\ValidationException when the snapshot
+     *         is malformed or comes from an incompatible schema version
+     */
+    public function hydrateState(array $data): GameStateInterface;
+
+    /**
      * @throws \CasinoEngine\Core\Exception\GameRuleException
      */
     public function execute(

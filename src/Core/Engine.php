@@ -159,23 +159,44 @@ final class Engine
     /**
      * Maps configured namespaces to directories using Composer's PSR-4 map.
      *
+     * Composer maps a *prefix* to a directory (`CasinoEngine\` => `src/`), but
+     * discovery is configured with a *sub*-namespace (`CasinoEngine\Games`).
+     * The sub-namespace's directory is therefore the composer directory plus
+     * the remainder of the namespace as a path.
+     *
      * @param list<string> $namespaces
-     * @return array<string, string> prefix => directory
+     * @return array<string, string> requested prefix (trailing \) => directory
      */
     private function namespacePaths(array $namespaces): array
     {
         $composerPath = $this->config()->rootPath() . '/vendor/composer/autoload_psr4.php';
+        if (!is_file($composerPath)) {
+            return [];
+        }
+
+        /** @var array<string, list<string>> $psr4 */
+        $psr4 = require $composerPath;
         $map = [];
 
-        if (is_file($composerPath)) {
-            /** @var array<string, list<string>> $psr4 */
-            $psr4 = require $composerPath;
+        foreach ($namespaces as $namespace) {
+            $requested = rtrim($namespace, '\\') . '\\';
+
             foreach ($psr4 as $prefix => $directories) {
-                foreach ($namespaces as $namespace) {
-                    $normalised = rtrim($namespace, '\\') . '\\';
-                    if (str_starts_with($prefix, $normalised) || $prefix === $normalised) {
-                        $map[$prefix] = $directories[0];
-                    }
+                if (!str_starts_with($requested, $prefix)) {
+                    continue;
+                }
+
+                $remainder = substr($requested, strlen($prefix));
+                $directory = rtrim($directories[0], '/') . '/'
+                    . str_replace('\\', '/', rtrim($remainder, '\\'));
+
+                // Collapse any doubled slashes so the path used as a string
+                // prefix during discovery matches the real file paths.
+                $directory = (string) preg_replace('#/+#', '/', $directory);
+
+                if (is_dir($directory)) {
+                    $map[$requested] = $directory;
+                    break;
                 }
             }
         }

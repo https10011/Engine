@@ -135,6 +135,13 @@ final class RoundService
         // if another action completed in the meantime.
         $locked = $this->sessions->loadForUserLocked($session->id(), $userId);
 
+        // The session service carries state as an opaque array; the module
+        // turns it back into its own typed state before evaluation.
+        $locked = $locked->withState(
+            $game->hydrateState($locked->state()->toArray()),
+            $locked->updatedAt()
+        );
+
         $currency = (string) $this->config->get('engine.currency', 'PHP');
         $scale = (int) $this->config->get('betting.currency_minor_units', 2);
         $bet = $action->bet() ?? Money::zero($currency, $scale);
@@ -145,9 +152,14 @@ final class RoundService
         //    the transaction without touching the wallet.
         $outcome = $this->runtime->execute($game, $action, $locked->state(), $context);
 
+        // A multi-action round settles against the stake it was opened with,
+        // not against the action that happens to complete it (a blackjack
+        // "stand" carries no bet of its own).
+        $stake = $outcome->stakeBasis() ?? $bet;
+
         $wagered = $this->payouts->compute($bet, $outcome->wagerMultiplier());
-        $payout = $this->payouts->compute($bet, $outcome->payoutMultiplier());
-        $this->payouts->assertWithinMaxWin($bet, $payout, $game->metadata()->maxWinMultiplier());
+        $payout = $this->payouts->compute($stake, $outcome->payoutMultiplier());
+        $this->payouts->assertWithinMaxWin($stake, $payout, $game->metadata()->maxWinMultiplier());
 
         $roundNumber = $locked->roundCount() + 1;
         $now = $this->clock->now()->format('Y-m-d H:i:s');

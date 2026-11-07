@@ -19,11 +19,24 @@ final class GameOutcome implements GameOutcomeInterface
     public function __construct(
         private readonly GameStateInterface $nextState,
         private readonly GameOutcomeDetailInterface $detail,
-        private readonly Ratio $payoutMultiplier = new Ratio(0, 1),
-        private readonly Ratio $wagerMultiplier = new Ratio(1, 1),
+        ?Ratio $payoutMultiplier = null,
+        ?Ratio $wagerMultiplier = null,
         private readonly array $featureTransitions = [],
-        private readonly array $events = []
+        private readonly array $events = [],
+        private readonly ?Money $stakeBasis = null
     ) {
+        // A parameter default may not call Ratio::of(), so the neutral defaults
+        // are resolved here. Omitting them means "no payout, one wager".
+        $this->payoutMultiplier = $payoutMultiplier ?? Ratio::zero();
+        $this->wagerMultiplier = $wagerMultiplier ?? Ratio::one();
+    }
+
+    private readonly Ratio $payoutMultiplier;
+    private readonly Ratio $wagerMultiplier;
+
+    public function stakeBasis(): ?Money
+    {
+        return $this->stakeBasis;
     }
 
     public static function lose(GameStateInterface $nextState, GameOutcomeDetailInterface $detail): self

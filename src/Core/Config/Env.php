@@ -111,13 +111,24 @@ final class Env
             }
 
             // Strip an unquoted trailing comment, then surrounding quotes.
-            if ($value !== '' && $value[0] !== '"' && $value[0] !== "'") {
+            $quoted = false;
+            if ($value !== '' && ($value[0] === '"' || $value[0] === "'")) {
+                $quoted = true;
+            } elseif ($value !== '') {
                 $hash = strpos($value, ' #');
                 if ($hash !== false) {
                     $value = rtrim(substr($value, 0, $hash));
                 }
             }
+
             $value = trim($value, "\"'");
+
+            // Inside quotes, `\\` and `\"` are escapes. Without this a value
+            // such as "CasinoEngine\\Games" would keep both backslashes and
+            // every namespace lookup would miss.
+            if ($quoted) {
+                $value = str_replace(['\\\\', '\\"', "\\'"], ['\\', '"', "'"], $value);
+            }
 
             self::$fileValues[$name] = $value;
 

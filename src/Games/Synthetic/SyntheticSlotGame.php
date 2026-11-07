@@ -50,11 +50,11 @@ final class SyntheticSlotGame implements GameInterface
     public const ID = 'synthetic.slot3x3';
 
     private const SYMBOLS = [
-        'A' => ['name' => 'Ace', 'weight' => 2, 'payouts' => [3 => 100]],
-        'K' => ['name' => 'King', 'weight' => 3, 'payouts' => [3 => 50]],
-        'Q' => ['name' => 'Queen', 'weight' => 4, 'payouts' => [3 => 25]],
-        'J' => ['name' => 'Jack', 'weight' => 5, 'payouts' => [3 => 10]],
-        'W' => ['name' => 'Wild', 'weight' => 1, 'payouts' => [3 => 200]],
+        'A' => ['name' => 'Ace', 'weight' => 2, 'payouts' => [3 => 21]],
+        'K' => ['name' => 'King', 'weight' => 3, 'payouts' => [3 => 9]],
+        'Q' => ['name' => 'Queen', 'weight' => 4, 'payouts' => [3 => 4]],
+        'J' => ['name' => 'Jack', 'weight' => 5, 'payouts' => [3 => 2]],
+        'W' => ['name' => 'Wild', 'weight' => 1, 'payouts' => [3 => 30]],
     ];
 
     /** The five standard 3x3 paylines, as row indices per reel. */
@@ -287,7 +287,7 @@ final class SyntheticSlotGame implements GameInterface
         }
 
         // The wild pays its own run of three.
-        $payouts['W'] = [3 => 200];
+        $payouts['W'] = [3 => 30];
 
         return new Paytable(
             $payouts,

@@ -105,7 +105,7 @@ final class SlotEngine
         /** @var list<FeatureTransition> $transitions */
         $transitions = [];
         $totalUnits = 0;
-        $spinMultiplier = 1;
+        $highestMultiplier = 1;
 
         // Feature states are tracked per feature so a cascade loop advances a
         // feature without discarding the others' progress.
@@ -129,9 +129,14 @@ final class SlotEngine
 
             $evaluation = $this->evaluator->evaluate($grid, $this->paytable);
             $evaluations[] = $evaluation;
-            $totalUnits += $evaluation->units;
 
             $continueChain = false;
+            // The multiplier a feature reports applies to *this* evaluation's
+            // units, not to the whole spin. That is what a tumble multiplier
+            // ladder means: the first win pays 1x, the second 2x, the third 3x,
+            // and so on. Multiplying the spin's total instead would pay the
+            // early cascades at the final rung's value.
+            $evaluationMultiplier = 1;
 
             foreach ($this->features as $feature) {
                 $type = $feature->type();
@@ -151,26 +156,31 @@ final class SlotEngine
                     $transitions[] = $transition;
                 }
 
-                if ($step->multiplier > 1) {
-                    $spinMultiplier *= $step->multiplier;
+                if ($step->multiplier > $evaluationMultiplier) {
+                    $evaluationMultiplier = $step->multiplier;
                 }
 
                 if ($step->grid !== null) {
+                    // A feature that hands back a new grid (a cascade) is asking
+                    // for that grid to be evaluated too, so the chain continues.
                     $grid = $step->grid;
+                    $continueChain = true;
                 }
 
                 if ($step->continues) {
                     $continueChain = true;
                 }
             }
+
+            $totalUnits += $evaluation->units * $evaluationMultiplier;
+            $highestMultiplier = max($highestMultiplier, $evaluationMultiplier);
         } while ($continueChain);
 
         $finalEvaluation = $evaluations[count($evaluations) - 1] ?? EvaluationResult::empty();
 
-        // A combo or free-spin multiplier applies to the whole spin, once, at
-        // the end. Applying it per evaluation would compound it across
-        // cascades, which is a different and much richer game.
-        $payoutMultiplier = $this->unitsToMultiplier($totalUnits * $spinMultiplier);
+        // Every evaluation's units were already multiplied by that cascade's
+        // own ladder step, so the total is the spin's payout in units.
+        $payoutMultiplier = $this->unitsToMultiplier($totalUnits);
 
         $nextState = $state->withFeatures($pending, $grid->cells(), $state->spinsPlayed() + 1);
 
@@ -179,7 +189,7 @@ final class SlotEngine
             $evaluations,
             $transitions,
             $totalUnits,
-            $spinMultiplier,
+            $highestMultiplier,
             $payoutMultiplier,
             $isFreeSpin,
             $nextState,

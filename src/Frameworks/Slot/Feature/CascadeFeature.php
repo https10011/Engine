@@ -71,11 +71,14 @@ final class CascadeFeature implements FeatureInterface
 
         $cascaded = $this->removeAndRefill($context, $positions);
 
+        // The cascade returns a new grid and asks for one more evaluation of
+        // it. It deliberately does *not* set `continues`, which would re-apply
+        // this feature to the same grid and never settle.
         return new FeatureStep(
             ['index' => $cascadeIndex + 1],
             $cascaded,
             1,
-            true,
+            false,
             [new FeatureTransition(
                 $this->type(),
                 FeatureTransition::UPDATED,
@@ -113,18 +116,44 @@ final class CascadeFeature implements FeatureInterface
     private function removeAndRefill(FeatureContext $context, array $positions): Grid
     {
         $grid = $context->grid;
-        $removed = $grid->withoutPositions($positions);
 
-        // Refill each reel to its original height. The strip is walked from a
-        // random position so the refilled symbols are not always the same ones.
+        // Mark the winning cells, then drop and refill them in one pass. The
+        // removal is done here rather than through Grid::withoutPositions()
+        // because a grid with an empty column is not a valid grid: the cells
+        // must be refilled before one is constructed.
+        $remove = [];
+        foreach ($positions as [$reel, $row]) {
+            $remove[$reel][$row] = true;
+        }
+
+        // Refill each reel from that reel's strip, not uniformly at random.
+        // The strip carries the game's real symbol distribution, so a refilled
+        // cell has the same probability as a spun one; picking uniformly would
+        // quietly make cascades pay more than the maths intends.
+        $reels = $context->configuration['reels'] ?? null;
+        $strips = is_array($reels) ? ($reels['strips'] ?? null) : null;
+
         $cells = [];
-        foreach ($removed->cells() as $reelIndex => $column) {
-            $height = $grid->rowsFor($reelIndex);
-            $cells[$reelIndex] = $column;
-
-            while (count($cells[$reelIndex]) < $height) {
-                $cells[$reelIndex][] = $context->rng->pick($grid->symbolSet()->ids());
+        foreach ($grid->cells() as $reelIndex => $column) {
+            $kept = [];
+            foreach ($column as $rowIndex => $symbolId) {
+                if (!isset($remove[$reelIndex][$rowIndex])) {
+                    $kept[] = $symbolId;
+                }
             }
+
+            $height = $grid->rowsFor($reelIndex);
+            $strip = is_array($strips) && isset($strips[$reelIndex]) && is_array($strips[$reelIndex])
+                ? array_values(array_map('strval', $strips[$reelIndex]))
+                : null;
+
+            while (count($kept) < $height) {
+                $kept[] = $strip === null || $strip === []
+                    ? $context->rng->pick($grid->symbolSet()->ids())
+                    : $strip[$context->rng->int(0, count($strip) - 1)];
+            }
+
+            $cells[$reelIndex] = $kept;
         }
 
         return Grid::fromCells($cells, $grid->symbolSet());

@@ -40,18 +40,24 @@ final class FreeSpinsFeature implements FeatureInterface
     public function apply(FeatureContext $context): FeatureStep
     {
         $state = $context->state;
-        $remaining = (int) ($state['remaining'] ?? 0);
         $transitions = [];
 
-        // During free spins, a fresh scatter may add more spins.
-        if ($context->isFreeSpin && $remaining > 0 && $this->retrigger) {
-            $award = $this->awardFor($context->evaluation->scatterCount);
-            if ($award > 0) {
-                $totalAwarded = (int) ($state['awarded'] ?? 0);
-                $allowed = max(0, min($award, $this->retriggerCap - $totalAwarded));
+        // A free spin is a spin of its own, consumed by the *next* action, not
+        // an extra evaluation of this grid. A feature that asked for another
+        // evaluation of the same grid would pay the same winning line twice.
+        // The feature therefore never continues the intra-spin loop; it only
+        // manages the pool of spins the session carries forward.
+        if ($context->isFreeSpin) {
+            $remaining = max(0, (int) ($state['remaining'] ?? 0) - 1);
+            $awarded = (int) ($state['awarded'] ?? 0);
+
+            // A scatter landing during free spins may add more, up to the cap.
+            if ($this->retrigger) {
+                $award = $this->awardFor($context->evaluation->scatterCount);
+                $allowed = max(0, min($award, $this->retriggerCap - $awarded));
                 if ($allowed > 0) {
                     $remaining += $allowed;
-                    $state['awarded'] = $totalAwarded + $allowed;
+                    $awarded += $allowed;
                     $transitions[] = new FeatureTransition(
                         $this->type(),
                         FeatureTransition::UPDATED,
@@ -61,24 +67,21 @@ final class FreeSpinsFeature implements FeatureInterface
                 }
             }
 
-            $remaining--;
-            if ($remaining > 0) {
-                $transitions[] = new FeatureTransition($this->type(), FeatureTransition::UPDATED, $remaining);
-            } else {
-                $transitions[] = new FeatureTransition($this->type(), FeatureTransition::ENDED, 0);
-            }
+            $transitions[] = $remaining > 0
+                ? new FeatureTransition($this->type(), FeatureTransition::UPDATED, $remaining)
+                : new FeatureTransition($this->type(), FeatureTransition::ENDED, 0);
 
             return new FeatureStep(
-                ['remaining' => max(0, $remaining), 'awarded' => (int) ($state['awarded'] ?? 0)],
+                ['remaining' => $remaining, 'awarded' => $awarded],
                 null,
                 1,
-                $remaining > 0,
+                false,
                 $transitions,
                 ['free_spin' => true]
             );
         }
 
-        // A paid spin may trigger free spins.
+        // A paid spin may trigger a pool of free spins for the following spins.
         $award = $this->awardFor($context->evaluation->scatterCount);
         if ($award > 0) {
             $remaining = min($award, $this->retriggerCap);
@@ -87,7 +90,7 @@ final class FreeSpinsFeature implements FeatureInterface
                 ['remaining' => $remaining, 'awarded' => $remaining],
                 null,
                 1,
-                true,
+                false,
                 [new FeatureTransition(
                     $this->type(),
                     FeatureTransition::STARTED,

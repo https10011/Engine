@@ -155,7 +155,8 @@ final class RoundService
             $this->betting->validate($bet, $game->metadata());
         }
 
-        $context = $this->buildContext($gameId);
+        $roundNumber = $locked->roundCount() + 1;
+        $context = $this->buildContext($gameId, $roundNumber);
 
         // 1. Evaluate. Nothing has moved yet, and a rule violation here aborts
         //    the transaction without touching the wallet.
@@ -170,7 +171,6 @@ final class RoundService
         $payout = $this->payouts->compute($stake, $outcome->payoutMultiplier());
         $this->payouts->assertWithinMaxWin($stake, $payout, $game->metadata()->maxWinMultiplier());
 
-        $roundNumber = $locked->roundCount() + 1;
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
         // The round row is written first so bets and payouts can reference it.
@@ -310,12 +310,23 @@ final class RoundService
         return null;
     }
 
-    private function buildContext(string $gameId): GameContext
+    /**
+     * @param int $roundNumber The round this context will evaluate, folded into
+     *        any pinned seed so that successive rounds of one session draw
+     *        different outcomes while a whole session stays reproducible from
+     *        the seed. Without the fold, a pinned seed would hand every round
+     *        the same RNG stream and therefore the same result.
+     */
+    private function buildContext(string $gameId, int $roundNumber): GameContext
     {
         $game = $this->games->get($gameId);
+        $seed = $this->seed();
 
         return new GameContext(
-            $this->rngFactory->forEnvironment($this->config, $this->seed()),
+            $this->rngFactory->forEnvironment(
+                $this->config,
+                $seed === null ? null : $seed + ($roundNumber - 1) * 0x9E3779B1
+            ),
             $game->metadata(),
             $game->defaultConfiguration(),
             $this->logger ?? new NullLogger(),

@@ -21,6 +21,7 @@ use CasinoEngine\Cli\Command\GameShowCommand;
 use CasinoEngine\Cli\Command\IdempotencyPurgeCommand;
 use CasinoEngine\Cli\Command\SessionExpireCommand;
 use CasinoEngine\Cli\Command\RateLimitPurgeCommand;
+use CasinoEngine\Cli\Command\ServeCommand;
 use CasinoEngine\Cli\Command\SessionStartCommand;
 use CasinoEngine\Cli\Command\TokenPurgeCommand;
 use CasinoEngine\Cli\Command\UserCreateCommand;
@@ -70,6 +71,7 @@ $application->registerAll([
     new TokenPurgeCommand(),
     new AuditPurgeCommand(),
     new RateLimitPurgeCommand(),
+    new ServeCommand(),
 ]);
 
 exit($application->run($argv));

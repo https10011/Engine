@@ -40,4 +40,7 @@ interface AuthServiceInterface
 
     /** Produces a password hash suitable for storage. */
     public function hashPassword(string $plaintext): string;
+
+    /** The configured algorithm name, as recorded in `user_credentials.algo`. */
+    public function passwordAlgo(): string;
 }

@@ -106,6 +106,8 @@ final class Config
             'IDEMPOTENCY_TTL_SECONDS'     => 'security.idempotency_ttl_seconds',
             'AUDIT_RETENTION_DAYS'        => 'security.audit_retention_days',
             'RATE_LIMIT_RETENTION_DAYS'   => 'security.rate_limit_retention_days',
+            'PASSWORD_ALGO'               => 'security.password_algo',
+            'ENGINE_VERSION_OVERRIDE'     => 'engine.version',
         ];
 
         $path = $map[$envKey] ?? null;

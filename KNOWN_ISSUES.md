@@ -52,6 +52,28 @@ recorded.
 
 ---
 
+### KI-6 — No independent security review
+**Severity:** medium (assurance, not a known defect)
+**Detail:** The security audit in `SECURITY_AUDIT.md` was performed by the
+engine's own author. It is thorough and each control is backed by a test, but
+it has not been checked by an independent party and no penetration test has
+been run.
+**Impact:** A defect an outside reviewer would notice could remain.
+**Mitigation:** Every finding is documented, the test suite covers the wallet
+and idempotency invariants under concurrency, and the threat model is narrow
+(single owner, virtual credits). An external review is recommended before any
+public deployment.
+
+### KI-7 — CSRF is not implemented because it is not yet applicable
+**Severity:** low (conditional)
+**Detail:** The API authenticates with a bearer token that a browser does not
+attach automatically, so a cross-site request cannot borrow a victim's
+credentials. If cookie-based sessions are ever added, CSRF protection must be
+added at the same time.
+**Impact:** None today. It becomes a real gap only if the auth model changes.
+
+---
+
 ## Resolved
 
 _None yet._

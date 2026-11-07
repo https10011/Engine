@@ -14,8 +14,6 @@ declare(strict_types=1);
  * deposit, withdrawal or payment code anywhere in the project.
  */
 
-declare(strict_types=1);
-
 use CasinoEngine\Api\ApiKernel;
 use CasinoEngine\Api\Http\Request;
 use CasinoEngine\Api\Http\Response;

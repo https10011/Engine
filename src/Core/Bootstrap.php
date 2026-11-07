@@ -58,6 +58,10 @@ final class Bootstrap
             'API_RATE_LIMIT_PER_MINUTE',
             'API_MAX_BODY_BYTES',
             'IDEMPOTENCY_TTL_SECONDS',
+            'AUDIT_RETENTION_DAYS',
+            'RATE_LIMIT_RETENTION_DAYS',
+            'PASSWORD_ALGO',
+            'ENGINE_VERSION_OVERRIDE',
         ]);
 
         date_default_timezone_set((string) $config->get('app.timezone', 'UTC'));

@@ -25,8 +25,9 @@ use CasinoEngine\Core\Value\Ratio;
  * It is the second implementation of the settlement rule, and that is
  * deliberate: it lets the framework's mathematics be analysed at millions of
  * rounds per run, far faster than a database round trip per spin would allow.
- * The rule it implements is the same one the round service uses, and the
- * integration tests assert the two agree on the same seed.
+ * The rule it implements is the same one the round service uses, and
+ * RoundServiceIntegrationTest::testSimulationDriverAgreesWithTheRoundService
+ * asserts the two agree on the same seed.
  */
 final class GameDriver
 {

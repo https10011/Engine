@@ -17,8 +17,15 @@ final class GameRegistry implements GameRegistryInterface
     /** @var array<string, GameInterface> */
     private array $games = [];
 
-    public function __construct(private readonly ?EventDispatcherInterface $events = null)
-    {
+    /**
+     * @param string $minSdkVersion Modules declaring an SDK contract older than
+     *        this are refused at registration, so the engine never runs a module
+     *        written against a contract it no longer honours.
+     */
+    public function __construct(
+        private readonly ?EventDispatcherInterface $events = null,
+        private readonly string $minSdkVersion = '1.0.0'
+    ) {
     }
 
     public function register(GameInterface $game): void
@@ -39,6 +46,17 @@ final class GameRegistry implements GameRegistryInterface
             throw new ConfigurationException(
                 "Game '$id' reports category '{$game->category()->value}' but its metadata says '{$metadata->category()->value}'.",
                 ['game_id' => $id]
+            );
+        }
+
+        // A module written against an older SDK contract than the engine still
+        // supports is refused here rather than failing in some subtle way at
+        // play time.
+        if (version_compare($metadata->sdkVersion(), $this->minSdkVersion, '<')) {
+            throw new ConfigurationException(
+                "Game '$id' targets SDK contract {$metadata->sdkVersion()}, "
+                . "but this engine requires at least {$this->minSdkVersion}.",
+                ['game_id' => $id, 'sdk_version' => $metadata->sdkVersion()]
             );
         }
 

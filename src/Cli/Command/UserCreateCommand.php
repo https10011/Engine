@@ -72,7 +72,7 @@ final class UserCreateCommand extends AbstractCommand
 
             /** @var AuthServiceInterface $auth */
             $auth = $engine->container()->get(AuthServiceInterface::class);
-            $users->setCredentials($userId, $auth->hashPassword($password), PASSWORD_ARGON2ID, $now);
+            $users->setCredentials($userId, $auth->hashPassword($password), $auth->passwordAlgo(), $now);
         }
 
         $this->line(sprintf('Created user #%d (%s) with a balance of %s.', $userId, $username, $balance->format()));

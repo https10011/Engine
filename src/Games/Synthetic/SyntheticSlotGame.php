@@ -121,8 +121,7 @@ final class SyntheticSlotGame implements GameInterface
             freeSpinsEnabled: true,
             freeSpinAwards: [3 => 10, 4 => 15, 5 => 20],
             freeSpinsRetrigger: true,
-            freeSpinsCap: 100,
-            scatterSymbolId: 'S'
+            freeSpinsCap: 100
         );
     }
 

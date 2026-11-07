@@ -196,7 +196,8 @@ final class Container
             $c->get(TokenRepository::class),
             $c->get(ClockInterface::class),
             (int) $c->config->get('security.api_token_ttl_seconds', 86400),
-            $c->get(AuditRepository::class)
+            $c->get(AuditRepository::class),
+            (string) $c->config->get('security.password_algo', 'argon2id')
         );
 
         $this->factories[PayoutServiceInterface::class] = static fn (): PayoutServiceInterface
@@ -230,7 +231,10 @@ final class Container
             );
 
         $this->factories[GameRegistryInterface::class] = fn (self $c): GameRegistryInterface
-            => new GameRegistry($c->get(EventDispatcherInterface::class));
+            => new GameRegistry(
+                $c->get(EventDispatcherInterface::class),
+                (string) $c->config->get('engine.min_sdk_version', '1.0.0')
+            );
 
         $this->factories[GameRuntime::class] = fn (self $c): GameRuntime
             => new GameRuntime($c->logger());

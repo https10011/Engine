@@ -184,7 +184,7 @@ connection, static analysis config, `.gitignore`, `docs/` structure.
 * No secret is committed (`git grep` finds no password/DSN literal).
 
 **Verification.** `php -l` sweep, `bin/console list`, DB smoke command
-(`db:check`), PHPStan level ≥ 5 clean on `src/`.
+(`db:status`), PHPStan level ≥ 5 clean on `src/`.
 
 ---
 
@@ -513,7 +513,7 @@ seeded spin reproducibility; statistical smoke test with documented tolerance.
 * Sessions/rounds/bets/payouts retrievable end-to-end.
 * Schema documentation matches the actual DDL (automated comparison test).
 
-**Verification.** `php bin/console migrate` from scratch; schema-vs-docs test;
+**Verification.** `php bin/console db:migrate` from scratch; schema-vs-docs test;
 repository integration tests.
 
 ---
@@ -821,10 +821,10 @@ The project is complete when:
 | Static analysis | `vendor/bin/phpstan analyse` |
 | Coding standard | `vendor/bin/phpcs` |
 | Unit/integration | `vendor/bin/phpunit` |
-| Database | `php bin/console migrate`, `db:check`, schema-vs-doc test |
+| Database | `php bin/console db:migrate`, `php bin/console db:status`, schema-vs-doc test |
 | CLI | `php bin/console list`, each command `--help` |
 | API | `php bin/console serve` + integration tests + `curl` transcript |
-| Simulation | `php bin/console sim:run ... --seed=42` twice, diff output |
+| Simulation | `php bin/engine-simulate sim:run ... --seed=42` twice, diff output |
 | Security | grep sweeps, `EXPLAIN`, regression tests, manual review |
 | Docs | command extraction script; schema comparison test |
 

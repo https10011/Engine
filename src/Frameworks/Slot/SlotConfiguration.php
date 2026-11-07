@@ -22,7 +22,6 @@ final class SlotConfiguration implements GameConfigurationInterface
     public function __construct(
         public readonly int $coinValueMinor = 100,
         public readonly array $betLevels = [1, 2, 5, 10, 20],
-        public readonly int $evaluationModel = 0,
         public readonly bool $cascadesEnabled = false,
         public readonly int $maxCascades = 20,
         public readonly bool $comboMultiplierEnabled = false,
@@ -33,7 +32,6 @@ final class SlotConfiguration implements GameConfigurationInterface
         public readonly array $freeSpinAwards = [3 => 10, 4 => 15, 5 => 20],
         public readonly bool $freeSpinsRetrigger = true,
         public readonly int $freeSpinsCap = 200,
-        public readonly string $scatterSymbolId = 'SCATTER',
         /** @var array<string, mixed> */
         public readonly array $extra = []
     ) {
@@ -52,7 +50,6 @@ final class SlotConfiguration implements GameConfigurationInterface
             'free_spin_awards',
             'free_spins_retrigger',
             'free_spins_cap',
-            'scatter_symbol_id',
             'extra',
         ];
 
@@ -84,7 +81,6 @@ final class SlotConfiguration implements GameConfigurationInterface
         return new self(
             (int) ($values['coin_value_minor'] ?? 100),
             $betLevels,
-            0,
             (bool) ($values['cascades_enabled'] ?? false),
             (int) ($values['max_cascades'] ?? 20),
             (bool) ($values['combo_multiplier_enabled'] ?? false),
@@ -93,7 +89,6 @@ final class SlotConfiguration implements GameConfigurationInterface
             $awards,
             (bool) ($values['free_spins_retrigger'] ?? true),
             (int) ($values['free_spins_cap'] ?? 200),
-            (string) ($values['scatter_symbol_id'] ?? 'SCATTER'),
             is_array($values['extra'] ?? null) ? $values['extra'] : []
         );
     }
@@ -111,7 +106,6 @@ final class SlotConfiguration implements GameConfigurationInterface
             'free_spin_awards'        => $this->freeSpinAwards,
             'free_spins_retrigger'    => $this->freeSpinsRetrigger,
             'free_spins_cap'          => $this->freeSpinsCap,
-            'scatter_symbol_id'       => $this->scatterSymbolId,
             'extra'                   => $this->extra,
         ];
     }

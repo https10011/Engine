@@ -50,13 +50,10 @@ final class ApiKernel
             $this->engine->config()->debug()
         );
 
-        $auth = new AuthService(
-            $container->get(\CasinoEngine\Persistence\Repository\UserRepository::class),
-            $container->get(\CasinoEngine\Persistence\Repository\TokenRepository::class),
-            $container->get(ClockInterface::class),
-            (int) $this->engine->config()->get('security.api_token_ttl_seconds', 86400),
-            $container->get(\CasinoEngine\Persistence\Repository\AuditRepository::class)
-        );
+        // One AuthService, resolved from the container, so the API and the CLI
+        // share the same password algorithm and token policy.
+        $auth = $container->get(AuthServiceInterface::class);
+        \assert($auth instanceof AuthService);
 
         $router->use('auth', new AuthMiddleware($auth));
         $router->use('session.owner', new SessionOwnershipMiddleware(
@@ -74,9 +71,11 @@ final class ApiKernel
         $this->registerPlayRoutes($router, $container);
         $this->registerWalletRoutes($router, $container);
 
+        $version = (string) $this->engine->config()->get('engine.version', '1.0.0');
         $router->add(new Route('GET', '/api/v1/health', static fn (): Response => Response::ok([
             'status'  => 'ok',
             'engine'  => 'universal-casino-engine',
+            'version' => $version,
         ])));
 
         return $router;

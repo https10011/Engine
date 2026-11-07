@@ -29,13 +29,32 @@ use CasinoEngine\Persistence\Repository\UserRepository;
  */
 final class AuthService implements AuthServiceInterface
 {
+    /** Recognised values of `security.password_algo`, mapped to PHP's constants. */
+    private const PASSWORD_ALGORITHMS = [
+        'argon2id' => \PASSWORD_ARGON2ID,
+        'bcrypt'   => \PASSWORD_BCRYPT,
+    ];
+
     public function __construct(
         private readonly UserRepository $users,
         private readonly TokenRepository $tokens,
         private readonly ClockInterface $clock,
         private readonly int $tokenTtlSeconds = 86400,
-        private readonly ?AuditRepository $audit = null
+        private readonly ?AuditRepository $audit = null,
+        private readonly string $passwordAlgo = 'argon2id'
     ) {
+        if (!isset(self::PASSWORD_ALGORITHMS[$this->passwordAlgo])) {
+            throw new \CasinoEngine\Core\Exception\ConfigurationException(
+                "Unknown password algorithm '{$this->passwordAlgo}'; expected one of "
+                . implode(', ', array_keys(self::PASSWORD_ALGORITHMS)) . '.'
+            );
+        }
+    }
+
+    /** The algorithm name, as stored in `user_credentials.algo`. */
+    public function passwordAlgo(): string
+    {
+        return $this->passwordAlgo;
     }
 
     public function login(string $username, string $password, ?string $ipAddress = null): array
@@ -115,7 +134,7 @@ final class AuthService implements AuthServiceInterface
 
     public function hashPassword(string $plaintext): string
     {
-        return password_hash($plaintext, PASSWORD_ARGON2ID);
+        return password_hash($plaintext, self::PASSWORD_ALGORITHMS[$this->passwordAlgo]);
     }
 
     private function hash(string $token): string

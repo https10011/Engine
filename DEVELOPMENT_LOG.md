@@ -152,3 +152,162 @@ Proceeding automatically to Phase 1.
 ---
 
 <!-- Subsequent phase entries are appended below as they complete. -->
+
+## Phases 1–14 — Implementation record (backfilled)
+
+The Phase 0 entry above is complete. Phases 1–14 were executed as code and
+recorded in commit history; this section backfills the per-phase log that the
+procedure requires, so the log matches what the repository actually contains.
+
+Evidence for every phase: `composer check` (lint + PHPStan + PHPUnit) passes;
+commit messages record each phase's scope. Command names that changed during
+implementation (`migrate`→`db:migrate`, `db:check`→`db:status`,
+`bin/console sim:run`→`bin/engine-simulate sim:run`) were corrected in
+`AUTONOMOUS_EXECUTION_PLAN.md` so the plan matches the shipped CLI.
+
+### Phase 1 — Project foundation
+**Objective.** Composer, PSR-4 autoloading, bootstrap, environment config,
+logging, exception handling, PDO abstraction, CLI entry point, static analysis.
+**Implemented.** `composer.json` (PHP ≥8.3, PSR-4 `CasinoEngine\`), `src/Core/`
+bootstrap and `Config`, `Env`, `src/Core/Logging/`, `src/Core/Exception/`
+hierarchy, `src/Core/Database/ConnectionInterface`, `bin/console`,
+`phpstan.neon.dist`, `phpcs.xml.dist`, `phpunit.xml`, `config/app.php`, `.env.example`.
+**Verified.** `composer install`; `php bin/console list` runs; lint and PHPStan clean.
+**Known limitation.** None.
+**Acceptance criteria.** Met.
+
+### Phase 2 — Universal engine core
+**Objective.** Boot, contracts, registry, discovery, lifecycle, session, runtime,
+state, results, events, errors — game-agnostic.
+**Implemented.** `src/Core/Engine`, `Registry/GameRegistry`, `GameDiscovery`,
+`Runtime/GameRuntime`, lifecycle/session/state/result/action contracts,
+`Event/EventDispatcher`, `Value/{Money,Ratio,GameMetadata,RoundResult,GameAction,
+GameContext}`.
+**Verified.** Registration, discovery, session create/load, action execution,
+result normalisation, and safe failure on an invalid module and action.
+**Acceptance criteria.** Met.
+
+### Phase 3 — Shared engine services
+**Objective.** RNG, wallet, betting, payout, session, statistics, history,
+transactions, idempotency.
+**Implemented.** `src/Services/Rng` (`SecureRandomGenerator`,
+`SeededRandomGenerator`, `RngFactory`), `Wallet/`, `Betting/`, `Payout/`,
+`Session/`, `Statistics/`, `History/`, `Round/RoundService`,
+`Transaction/TransactionManager`, `Idempotency/`.
+**Verified.** `tests/Transaction/WalletIntegrityTest.php` — failure before/after
+wager, during payout, duplicate request, concurrent wallet, retry after timeout.
+**Known limitation.** Rate limiting is table-backed, not Redis-backed (deliberate).
+**Acceptance criteria.** Met.
+
+### Phase 4 — Game SDK and module system
+**Objective.** Documented contracts so a new game is addable without core edits.
+**Implemented.** `GameInterface`, metadata/config/action/state/result/validation
+contracts; `GAME_SDK.md`; `src/Games/CoinFlip` as a worked example;
+`tests/Unit/Sdk/{SdkExampleModuleTest,GameModulePurityTest}.php`.
+**Verified.** The example registers, initialises and executes; the purity test
+fails the build if a module reaches for a global RNG.
+**Acceptance criteria.** Met.
+
+### Phase 5 — Slot game framework
+**Objective.** Extensible, mathematically correct slot framework.
+**Implemented.** `src/Frameworks/Slot/` — reel/symbol configuration, grid
+generation, pluggable evaluators (`PaylineEvaluator`, `WaysEvaluator`,
+cluster/scatter/composite), cascades, free spins, combo multipliers,
+`SlotState`/`SlotConfiguration`.
+**Verified.** `tests/Framework/Slot/{EvaluationModelsTest,FeatureRegressionTest}.php`.
+**Known limitation.** Frameworks implement shared mechanics; per-title maths are
+not replicated (see `KNOWN_ISSUES.md` KI-4).
+**Acceptance criteria.** Met.
+
+### Phase 6 — Card game framework
+**Objective.** Cards, decks, hands, blackjack, without blackjack rules in core.
+**Implemented.** `src/Frameworks/Card/` (`Card`, `Deck`, `Hand`, `Suit`) and
+`Card/Blackjack/` (`BlackjackHandEvaluator`, `Rules`, `Settlement`, `Outcome`).
+**Verified.** `tests/Framework/Card/CardAndBlackjackTest.php` (multi-deck,
+soft-17, every settlement branch).
+**Acceptance criteria.** Met.
+
+### Phase 7 — Roulette framework
+**Objective.** Configurable variants, bets, evaluation, payouts.
+**Implemented.** `src/Frameworks/Roulette/` (`RouletteVariant`, `BetFactory`,
+`BetType`, `RouletteEngine`, `RouletteSettlement`).
+**Verified.** `tests/Framework/Roulette/RouletteTest.php` (per bet type, French
+zero rules).
+**Acceptance criteria.** Met.
+
+### Phase 8 — Database and persistence
+**Objective.** Migrations, schema, indexes, FKs, repositories, transactions.
+**Implemented.** `database/migrations/` (engine tables, rate-limit buckets),
+`src/Persistence/` (connection, `MigrationRunner`, repositories).
+**Verified.** `db:migrate` from clean, `db:status` drift check, repository tests.
+**Acceptance criteria.** Met.
+
+### Phase 9 — HTTP/JSON API
+**Objective.** Thin controllers over the same services the CLI uses.
+**Implemented.** `src/Api/` (kernel, router, middleware, `AuthController`,
+`GameController`, `PlayController`, `WalletController`), `public/index.php`,
+`public/.htaccess`.
+**Verified.** `tests/Api/ApiTest.php`; manual `curl` transcript against the dev
+server (health and games endpoints).
+**Acceptance criteria.** Met.
+
+### Phase 10 — Synthetic game integration
+**Objective.** Three fixtures through the real runtime.
+**Implemented.** `src/Games/Synthetic/{SyntheticSlotGame,SyntheticBlackjackGame,
+SyntheticRouletteGame}` and their states/configurations.
+**Verified.** `tests/Integration/RoundServiceIntegrationTest.php` (wallet moves,
+history recorded, multi-action settlement).
+**Acceptance criteria.** Met.
+
+### Phase 11 — Simulation and mathematical testing
+**Objective.** CLI simulation, seeded runs, honest statistics.
+**Implemented.** `src/Simulation/` (`GameDriver`, `SimulationStatistics`,
+`SimulationConsole`), `bin/engine-simulate` (`sim:run`, `sim:compare`).
+**Verified.** Seeded runs reproducible; reports observed RTP with standard error
+and a 95% CI, labelled as sample observations.
+**Acceptance criteria.** Met.
+
+### Phase 12 — Security, reliability and performance audit
+**Objective.** Systematic review; fix critical/high findings.
+**Implemented.** `SECURITY_AUDIT.md`; hardening across auth, tx boundaries,
+validation, rate limiting, output encoding.
+**Verified.** Full suite green; grep sweeps for forbidden patterns; PHPStan clean.
+**Known limitation.** Self-conducted, no external review (KI-6).
+**Acceptance criteria.** Met.
+
+### Phase 13 — Documentation and developer experience
+**Objective.** Complete, accurate documentation.
+**Implemented.** `FRAMEWORK_{SLOT,CARD,ROULETTE}.md`, `DATABASE_SCHEMA.md`,
+`API_SPECIFICATION.md`, `TESTING_STRATEGY.md`, `DEPLOYMENT_GUIDE.md`; the
+remaining docs updated to match code.
+**Verified.** Commands extracted and run; API examples checked against real
+responses; `bin/engine-simulate` paths corrected.
+**Acceptance criteria.** Met.
+
+### Phase 14 — Final verification and completion
+**Objective.** Full verification and honest completion.
+**Verified.** `composer check`: lint OK, PHPStan OK, 168 tests / 22024
+assertions OK. Dev server and API exercised manually. Removed empty
+directories; corrected stale command names and doc claims.
+**Defects found and fixed during final verification:**
+1. `RoundService::buildContext()` rebuilt the RNG from a constant seed every
+   round, so a seeded session produced the **same outcome every round**. The
+   round number is now folded into the seed; a regression test
+   (`testSeededRoundsVaryAndStayReproducible`) locks it in.
+2. `GameDriver`'s docblock claimed an integration test proved it agreed with the
+   round service; no such test existed. One now does
+   (`testSimulationDriverAgreesWithTheRoundService`).
+3. `ServeCommand` did not refuse to run in production despite the
+   documentation saying so. It now refuses.
+4. Three documented configuration keys (`PASSWORD_ALGO`,
+   `ENGINE_VERSION_OVERRIDE`, and the min-SDK floor) had no consumer code.
+   `PASSWORD_ALGO` now selects the hash algorithm, `ENGINE_VERSION_OVERRIDE`
+   overrides the reported engine version, and the registry enforces a minimum
+   SDK contract version.
+5. Command drift in `AUTONOMOUS_EXECUTION_PLAN.md` corrected.
+**Acceptance criteria.** Met; publication is the only remaining action.
+
+### Continuing
+
+Proceeding to publication: review the diff, commit, push to `origin/main`, and
+record the commit hash in `PROJECT_STATUS.md`.

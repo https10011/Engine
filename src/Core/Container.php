@@ -223,6 +223,7 @@ final class Container
 
         $this->factories[RoundService::class] = fn (self $c): RoundService => new RoundService(
             $c->get(GameRegistryInterface::class),
+            $c->get(BettingServiceInterface::class),
             $c->get(SessionServiceInterface::class),
             $c->get(WalletServiceInterface::class),
             $c->get(PayoutServiceInterface::class),

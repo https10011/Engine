@@ -20,6 +20,7 @@ use CasinoEngine\Core\Value\RoundResult;
 use CasinoEngine\Persistence\Repository\BetRepository;
 use CasinoEngine\Persistence\Repository\PayoutRepository;
 use CasinoEngine\Persistence\Repository\RoundRepository;
+use CasinoEngine\Services\Betting\BettingServiceInterface;
 use CasinoEngine\Services\Idempotency\IdempotencyStoreInterface;
 use CasinoEngine\Services\Payout\PayoutServiceInterface;
 use CasinoEngine\Services\Rng\RngFactory;
@@ -53,6 +54,7 @@ final class RoundService
 {
     public function __construct(
         private readonly GameRegistryInterface $games,
+        private readonly BettingServiceInterface $betting,
         private readonly SessionServiceInterface $sessions,
         private readonly WalletServiceInterface $wallets,
         private readonly PayoutServiceInterface $payouts,
@@ -145,6 +147,13 @@ final class RoundService
         $currency = (string) $this->config->get('engine.currency', 'PHP');
         $scale = (int) $this->config->get('betting.currency_minor_units', 2);
         $bet = $action->bet() ?? Money::zero($currency, $scale);
+
+        // Enforce the game's own limits here, before the module runs. A module
+        // could check them too, but a module that forgot would let a bet past
+        // the limits it advertises in its metadata, so the engine checks.
+        if ($bet->isPositive()) {
+            $this->betting->validate($bet, $game->metadata());
+        }
 
         $context = $this->buildContext($gameId);
 

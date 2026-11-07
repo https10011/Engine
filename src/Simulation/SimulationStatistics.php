@@ -93,8 +93,13 @@ final class SimulationStatistics
         // contribute nothing to the return distribution.
         if ($wageredMinor > 0) {
             $return = $returnedMinor / $wageredMinor;
-            $this->meanReturn += ($return - $this->meanReturn) / $this->paidRounds;
-            $this->m2Return += ($return - $this->meanReturn) * ($return - $this->meanReturn);
+            // Welford's update. The second factor must use the *previous* mean:
+            // squaring the deviation from the new mean understates the
+            // variance, which would make every reported confidence interval
+            // narrower than the sample actually justifies.
+            $previousMean = $this->meanReturn;
+            $this->meanReturn += ($return - $previousMean) / $this->paidRounds;
+            $this->m2Return += ($return - $previousMean) * ($return - $this->meanReturn);
 
             $bucket = number_format($return, 2, '.', '');
             $this->multiplierHistogram[$bucket] = ($this->multiplierHistogram[$bucket] ?? 0) + 1;

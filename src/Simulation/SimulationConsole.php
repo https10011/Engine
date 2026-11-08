@@ -174,6 +174,10 @@ final class SimulationConsole
      */
     private function actionFor(\CasinoEngine\Core\Contract\GameInterface $game, \CasinoEngine\Core\Contract\GameStateInterface $state, Money $bet): GameAction
     {
+        if ($game instanceof \CasinoEngine\Core\Contract\SimulationStrategyInterface) {
+            return $game->simulationAction($state, $bet);
+        }
+
         return match ($game->metadata()->category()) {
             \CasinoEngine\Core\Contract\GameCategory::Slot     => GameAction::withBet('spin', $bet),
             \CasinoEngine\Core\Contract\GameCategory::Card     => GameAction::withBet('deal', $bet),
@@ -215,6 +219,10 @@ final class SimulationConsole
 
     private function policyFor(\CasinoEngine\Core\Contract\GameInterface $game): string
     {
+        if ($game instanceof \CasinoEngine\Core\Contract\SimulationStrategyInterface) {
+            return $game->simulationPolicy();
+        }
+
         return match ($game->metadata()->category()) {
             \CasinoEngine\Core\Contract\GameCategory::Card => 'stand on 17 or more, otherwise hit',
             \CasinoEngine\Core\Contract\GameCategory::Roulette => 'half on red, half straight-up on 17',

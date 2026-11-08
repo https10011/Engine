@@ -6,6 +6,7 @@ namespace CasinoEngine\Simulation;
 
 use CasinoEngine\Core\Contract\GameCategory;
 use CasinoEngine\Core\Contract\GameInterface;
+use CasinoEngine\Core\Contract\SimulationStrategyInterface;
 use CasinoEngine\Core\Contract\GameStateInterface;
 use CasinoEngine\Core\Exception\GameRuleException;
 use CasinoEngine\Core\Exception\ValidationException;
@@ -127,6 +128,8 @@ final class GameDriver
      *
      * Each category has its own continuation rule:
      *
+     *  - a module that implements {@see SimulationStrategyInterface} answers
+     *    for itself, because only it knows its own phases;
      *  - a slot round continues through its free spins, each of which is a
      *    spin with no bet;
      *  - a card round continues through the player's decisions;
@@ -137,6 +140,10 @@ final class GameDriver
         GameAction $previous,
         int $roundIndex
     ): ?GameAction {
+        if ($this->game instanceof SimulationStrategyInterface) {
+            return $this->game->simulationContinuation($state, $previous);
+        }
+
         return match ($this->game->metadata()->category()) {
             GameCategory::Slot => $this->slotContinuation($state),
             GameCategory::Card => $this->cardContinuation($state, $previous),

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Game id | `roulette.standard` |
+| Game id | `table.roulette` |
 | Provider (researched) | Standard public rules (Wikipedia *Roulette*) |
 | Category | Roulette |
 | Grid | N/A — wheel pockets |

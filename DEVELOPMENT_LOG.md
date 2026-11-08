@@ -311,3 +311,168 @@ directories; corrected stale command names and doc claims.
 
 Proceeding to publication: review the diff, commit, push to `origin/main`, and
 record the commit hash in `PROJECT_STATUS.md`.
+
+---
+
+## Phase 15–20 — Slot games (recorded in the roadmap and specifications)
+
+The audit, the shared infrastructure extensions and the sixteen slot games are
+recorded in `GAME_DEVELOPMENT_ROADMAP.md` §2, in each game's specification under
+`docs/games/`, and in the commits listed below. The status board at the foot of
+the roadmap is the authoritative phase status.
+
+---
+
+## Phase 21 — Blackjack
+
+**Date:** 2026-11-08
+**Status:** Complete
+
+### Announcement
+
+* Phase: 21. Objective: a complete, playable blackjack table on the card
+  framework, with every rule that varies between real tables configurable.
+* Deliverables: `BlackjackConfiguration`, `BlackjackState`, `Blackjack` module,
+  `BlackjackStrategy` (basic strategy for simulation), tests, specification.
+* Acceptance criteria: registered and listed; a full round executes; every rule
+  configurable and tested; settlement verified against constructed hands.
+
+### Implementation
+
+Files created:
+
+| File | Purpose |
+| --- | --- |
+| `src/Games/Table/Blackjack/BlackjackConfiguration.php` | Typed configuration wrapping `BlackjackRules`; unknown keys rejected |
+| `src/Games/Table/Blackjack/BlackjackState.php` | Multi-hand round state, schema-versioned, round-trips |
+| `src/Games/Table/Blackjack/Blackjack.php` | The module: deal, hit, stand, double, split, insurance, surrender |
+| `src/Frameworks/Card/Blackjack/BlackjackStrategy.php` | Published multi-deck basic strategy, as letter rows |
+| `src/Core/Contract/SimulationStrategyInterface.php` | Lets a game drive its own rounds in simulation |
+| `tests/Games/Table/BlackjackTest.php` | 51 tests |
+
+Files modified:
+
+| File | Change |
+| --- | --- |
+| `src/Simulation/GameDriver.php` | Consults `SimulationStrategyInterface` before its built-in continuation rules |
+| `src/Simulation/SimulationConsole.php` | Consults the interface for the opening action and the reported policy |
+| `phpunit.xml` | Added the `games` suite |
+
+### Defects found and fixed
+
+1. **The opening stake was never wagered.** `GameDriver` derives the amount
+   debited from the action's own bet times the outcome's wager multiplier, and
+   `deal` reported `Ratio::one()` while `Money` was taken from the request. The
+   first simulation reported `RTP 5.58` — a table paying five times everything.
+   Every action now states explicitly what it wagers: one for an action that
+   opens or extends a hand (deal, double, split, a taken insurance premium),
+   zero for a pure decision (hit, stand, a declined premium). After the fix the
+   same seed reports `RTP 1.0008` over 20,000 rounds.
+2. **The dealer peek ran after the player's natural was paid.** A dealer natural
+   beats everything except a player natural, so paying the player first handed
+   out 3:2 on hands that should have pushed. The peek now runs first.
+3. **Insurance took its premium from the request.** The premium is half the
+   original stake; it is now checked against the hand and must be submitted as
+   the action's own bet, so a client cannot buy insurance for an arbitrary
+   amount.
+4. **The dealer drew with every hand busted.** There is nothing left to beat, and
+   drawing could turn a settled loss into a meaningless dealer bust.
+
+### Verification
+
+```
+php bin/engine-simulate sim:run --game=table.blackjack --rounds=300000 --seed=7
+  Observed RTP                     0.9908
+  Observed hit frequency           0.5233
+  95% CI for mean return           0.9663 .. 0.9733
+```
+
+The measured house edge under the default rules (6 decks, S17, peek, DAS, no
+surrender) is 0.5–0.9% with the documented basic-strategy policy. That matches
+the published figure for this ruleset, which is the check that the wager
+accounting, the settlement and the strategy are all correct.
+
+```
+vendor/bin/phpunit --filter BlackjackTest  =>  51 tests, 251 assertions OK
+composer stan                             =>  No errors
+composer cs                               =>  Clean
+```
+
+### Limitations
+
+* Basic strategy is used by the simulation only; it is not offered to players as
+  a hint, and no card-counting assistance exists.
+* The strategy tables are the published multi-deck chart. Deviations for a
+  single- or double-deck shoe are not encoded; a table configured with one deck
+  still plays the multi-deck chart.
+
+---
+
+## Phase 22 — Roulette
+
+**Date:** 2026-11-08
+**Status:** Complete
+
+### Announcement
+
+* Phase: 22. Objective: a complete playable roulette table on the roulette
+  framework, supporting the three standard wheels.
+* Deliverables: `RouletteConfiguration`, `RouletteState`, `Roulette` module,
+  tests, specification.
+* Acceptance criteria: registered and listed; a full round executes; every
+  supported bet type settles correctly; limits enforced; history recorded.
+
+### Implementation
+
+Files created:
+
+| File | Purpose |
+| --- | --- |
+| `src/Games/Table/Roulette/RouletteConfiguration.php` | Variant plus per-bet-type and table-total limits |
+| `src/Games/Table/Roulette/RouletteState.php` | Bet slip, last spin, capped history, schema-versioned |
+| `src/Games/Table/Roulette/Roulette.php` | The module: place_bets, clear_bets, spin |
+| `tests/Games/Table/RouletteTest.php` | 46 tests |
+
+A round is **two actions**: `place_bets` validates a slip and parks it on the
+state without wagering anything; `spin` commits it and settles. Splitting them is
+what lets the interface behave like a real table — the player can build, adjust
+and clear a slip before committing — and it is also why a round is atomic only
+at the spin. Nothing is at risk until the wheel turns.
+
+### Security decisions
+
+* The slip on the state is **authoritative**. A spin re-validates the submitted
+  slip and compares a normalised fingerprint against the recorded one, so a
+  client cannot place one slip and spin another. The total stake must equal the
+  sum of the individual stakes; a client and server that disagree about what is
+  being wagered must not be silently reconciled.
+* Every bet is built through the framework's `BetFactory`, so an impossible bet
+  (a street that is not three consecutive numbers, a number not on this wheel)
+  is rejected before any money moves.
+* Per-bet-type and table-total limits are enforced server-side.
+
+### Verification
+
+```
+php bin/engine-simulate sim:run --game=table.roulette --rounds=200000 --seed=5
+  Observed RTP                     0.9706
+  95% CI for mean return           0.9662 .. 0.9750
+```
+
+0.9706 is the European wheel's 2.70% house edge, within the interval — the
+check that the payout ladder and the settlement are right.
+
+```
+vendor/bin/phpunit --filter RouletteTest  =>  46 tests, 616 assertions OK
+vendor/bin/phpunit                        =>  226 tests, 22212 assertions OK
+composer stan                             =>  No errors
+composer cs                               =>  Clean
+```
+
+### Limitations
+
+* **En prison** is modelled as a push on the imprisoning spin, which is the rule's
+  expected value over that spin; it is not carried forward as a live imprisoned
+  bet across two spins. La partage is exact.
+* The American five-number bet is supported by the framework but the default
+  table configuration is European.

@@ -5,7 +5,7 @@
 > top of the completed engine (phases 0–14).
 >
 > **Current phase:** see the status board at the bottom of this file.
-> **Last updated:** Phase 15 (repository audit and specifications).
+> **Last updated:** Phase 22 (Roulette) — table games complete.
 
 ---
 
@@ -343,13 +343,13 @@ verified, **[O]** observed, **[E]** estimated or **[U]** unverified.
 | Phase | Title | Status |
 | --- | --- | --- |
 | 15 | Repository audit and specifications | **Complete** |
-| 16 | Shared infrastructure extensions | In progress |
-| 17 | Slot games batch 1 | Not started |
-| 18 | Slot games batch 2 | Not started |
-| 19 | Slot games batch 3 | Not started |
-| 20 | Slot games batch 4 | Not started |
-| 21 | Blackjack | Not started |
-| 22 | Roulette | Not started |
+| 16 | Shared infrastructure extensions | **Complete** |
+| 17 | Slot games batch 1 | **Complete** |
+| 18 | Slot games batch 2 | **Complete** |
+| 19 | Slot games batch 3 | **Complete** |
+| 20 | Slot games batch 4 | **Complete** |
+| 21 | Blackjack | **Complete** |
+| 22 | Roulette | **Complete** |
 | 23 | Game integration | Not started |
 | 24 | Frontend | Not started |
 | 25 | Administrator panel frontend | Not started |

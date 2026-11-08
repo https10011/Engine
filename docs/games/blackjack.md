@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Game id | `cards.blackjack` |
+| Game id | `table.blackjack` |
 | Provider (researched) | Standard public rules (Wikipedia *Blackjack*) |
 | Category | Card |
 | Grid | N/A — shoe of cards |

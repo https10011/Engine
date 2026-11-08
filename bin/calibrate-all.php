@@ -27,16 +27,13 @@ $json = in_array('--json', $argv, true);
 $engine = Bootstrap::engine();
 $engine->discoverGames();
 
-$rows = [];
-
 /**
  * Reads the payout scale a definition applies, which the calibration has to
  * undo before it can compute a new one.
  *
  * @return array{0:int,1:int}
  */
-function payoutScale(GameInterface $game): array
-{
+$payoutScale = static function (GameInterface $game): array {
     if (!method_exists($game, 'definition')) {
         return [1, 1];
     }
@@ -48,7 +45,9 @@ function payoutScale(GameInterface $game): array
     );
 
     return $reader($game);
-}
+};
+
+$rows = [];
 
 foreach ($engine->registry()->ids(false) as $id) {
     $game = $engine->registry()->get($id);
@@ -80,7 +79,7 @@ foreach ($engine->registry()->ids(false) as $id) {
         // applies, so the new scale is the old one times target/measured.
         // Reporting target/measured alone would silently drop the existing
         // correction and overshoot on any game that had already been tuned.
-        [$appliedNumerator, $appliedDenominator] = payoutScale($game);
+        [$appliedNumerator, $appliedDenominator] = $payoutScale($game);
         $applied = $appliedNumerator / $appliedDenominator;
 
         // Six decimal places is enough to pin the return to within a ten-

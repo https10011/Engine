@@ -11,6 +11,7 @@ use CasinoEngine\Frameworks\Slot\Evaluation\ScatterEvaluator;
 use CasinoEngine\Frameworks\Slot\Feature\AuxiliaryReelFeature;
 use CasinoEngine\Frameworks\Slot\Feature\BonusWheelFeature;
 use CasinoEngine\Frameworks\Slot\Feature\FeatureInterface;
+use CasinoEngine\Frameworks\Slot\Feature\JackpotFeature;
 use CasinoEngine\Frameworks\Slot\SlotConfiguration;
 use CasinoEngine\Games\Slots\AbstractSlotGame;
 use CasinoEngine\Games\Slots\SlotGameDefinition;
@@ -78,7 +79,7 @@ final class FortuneGems2 extends AbstractSlotGame
                 new PaylineEvaluator(SlotParts::paylines3x3()),
                 new ScatterEvaluator()
             ),
-            static function (SlotConfiguration $configuration): array {
+            static function (SlotConfiguration $configuration, array $spinConfiguration = []): array {
                 /** @var list<FeatureInterface> $features */
                 $features = [];
 
@@ -92,6 +93,14 @@ final class FortuneGems2 extends AbstractSlotGame
                     [1, 3, 5, 8, 10, 15, 20, 30, 50, 100, 200],
                     3
                 );
+
+                // The advertised four-tier jackpot. The roll is only added when
+                // an administrator has configured a jackpot probability, so an
+                // unconfigured game carries no jackpot event at all rather than
+                // a disabled one that still rolls.
+                if (((float) ($spinConfiguration['jackpot_probability'] ?? 0.0)) > 0.0) {
+                    $features[] = new JackpotFeature();
+                }
 
                 return $features;
             },

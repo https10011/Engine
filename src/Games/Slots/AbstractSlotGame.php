@@ -242,6 +242,11 @@ abstract class AbstractSlotGame implements GameInterface
         // published figure, and applying it is what makes the measured return
         // the published one.
         $cap = Ratio::of($definition->metadata()->maxWinMultiplier(), 1);
+
+        // A jackpot is a prize paid *in addition* to the reels' own result, so
+        // it is added before the cap rather than multiplied into the line win.
+        $payout = $payout->add($this->jackpotPrize($spin));
+
         if ($payout->toFloat() > $cap->toFloat()) {
             $payout = $cap;
         }
@@ -259,6 +264,31 @@ abstract class AbstractSlotGame implements GameInterface
     protected function detailFor(SpinResult $spin): SlotOutcomeDetail
     {
         return $spin->detail();
+    }
+
+    /**
+     * The jackpot prize this spin won, as a bet multiple, or zero.
+     *
+     * The prize is read from the jackpot transition's `payout_multiplier`,
+     * which the module's tier ladder supplies in *bet multiples*, not paytable
+     * units, so no unit conversion is involved.
+     */
+    private function jackpotPrize(SpinResult $spin): Ratio
+    {
+        foreach ($spin->transitions as $transition) {
+            if ($transition->type !== 'jackpot' || $transition->status !== FeatureTransition::STARTED) {
+                continue;
+            }
+
+            $multiplier = $transition->detail['payout_multiplier'] ?? 0;
+            if (!is_numeric($multiplier) || (float) $multiplier <= 0.0) {
+                return Ratio::zero();
+            }
+
+            return Ratio::fromNumber((float) $multiplier);
+        }
+
+        return Ratio::zero();
     }
 
     /**

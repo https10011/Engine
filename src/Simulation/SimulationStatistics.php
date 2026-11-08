@@ -55,6 +55,27 @@ final class SimulationStatistics
     private int $featureRounds = 0;
 
     /**
+     * Feature types that mark a bonus round, a free-spin award and a jackpot.
+     *
+     * The administrator configures these three probabilities independently of
+     * the ordinary win frequency, so the report must count them independently
+     * too. Deriving them from the feature transitions keeps one definition of
+     * "a bonus started" across the driver, the dashboard and the audit trail.
+     */
+    private const JACKPOT_FEATURE = 'jackpot';
+    private const FREE_SPIN_FEATURE = 'free_spins';
+    private const BONUS_FEATURES = ['bonus_wheel'];
+
+    /** Rounds in which a jackpot roll succeeded. */
+    private int $jackpotTriggers = 0;
+
+    /** Rounds that awarded free spins. */
+    private int $freeSpinTriggers = 0;
+
+    /** Rounds that started a bonus feature. */
+    private int $bonusTriggers = 0;
+
+    /**
      * Records one settled round.
      *
      * @param int $wageredMinor stake actually debited this round
@@ -113,6 +134,49 @@ final class SimulationStatistics
             foreach (array_unique($features) as $feature) {
                 $this->featureCounts[$feature] = ($this->featureCounts[$feature] ?? 0) + 1;
             }
+
+            $this->countTriggers($features);
+        }
+    }
+
+    /**
+     * Counts the separately-configured trigger events for this round.
+     *
+     * The features arrive as `type:status` pairs; only a feature that *started*
+     * counts as a trigger, so a free spin that ends, or a bonus that updates,
+     * does not inflate the rate.
+     *
+     * @param list<string> $features
+     */
+    private function countTriggers(array $features): void
+    {
+        $jackpot = false;
+        $freeSpins = false;
+        $bonus = false;
+
+        foreach ($features as $feature) {
+            [$type, $status] = array_pad(explode(':', $feature, 2), 2, '');
+            if ($status !== 'started' && $status !== 'triggered') {
+                continue;
+            }
+
+            if ($type === self::JACKPOT_FEATURE) {
+                $jackpot = true;
+            } elseif ($type === self::FREE_SPIN_FEATURE) {
+                $freeSpins = true;
+            } elseif (in_array($type, self::BONUS_FEATURES, true)) {
+                $bonus = true;
+            }
+        }
+
+        if ($jackpot) {
+            $this->jackpotTriggers++;
+        }
+        if ($freeSpins) {
+            $this->freeSpinTriggers++;
+        }
+        if ($bonus) {
+            $this->bonusTriggers++;
         }
     }
 
@@ -248,6 +312,45 @@ final class SimulationStatistics
         return $this->featureRounds / $this->rounds;
     }
 
+    public function jackpotTriggers(): int
+    {
+        return $this->jackpotTriggers;
+    }
+
+    public function bonusTriggers(): int
+    {
+        return $this->bonusTriggers;
+    }
+
+    public function freeSpinTriggers(): int
+    {
+        return $this->freeSpinTriggers;
+    }
+
+    public function jackpotTriggerRate(): ?float
+    {
+        return $this->rate($this->jackpotTriggers);
+    }
+
+    public function bonusTriggerRate(): ?float
+    {
+        return $this->rate($this->bonusTriggers);
+    }
+
+    public function freeSpinTriggerRate(): ?float
+    {
+        return $this->rate($this->freeSpinTriggers);
+    }
+
+    private function rate(int $count): ?float
+    {
+        if ($this->rounds === 0) {
+            return null;
+        }
+
+        return $count / $this->rounds;
+    }
+
     /**
      * The report a caller renders or exports.
      *
@@ -284,6 +387,12 @@ final class SimulationStatistics
             'return_distribution'       => $this->multiplierHistogram(),
             'feature_trigger_rate'      => $this->round($this->featureTriggerRate()),
             'feature_counts'            => $this->featureCounts,
+            'jackpot_triggers'          => $this->jackpotTriggers,
+            'jackpot_trigger_rate'      => $this->round($this->jackpotTriggerRate()),
+            'bonus_triggers'            => $this->bonusTriggers,
+            'bonus_trigger_rate'        => $this->round($this->bonusTriggerRate()),
+            'free_spin_triggers'        => $this->freeSpinTriggers,
+            'free_spin_trigger_rate'    => $this->round($this->freeSpinTriggerRate()),
         ];
     }
 

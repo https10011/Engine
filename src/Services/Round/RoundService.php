@@ -19,6 +19,7 @@ use CasinoEngine\Core\Value\Money;
 use CasinoEngine\Core\Value\RoundResult;
 use CasinoEngine\Persistence\Repository\BetRepository;
 use CasinoEngine\Persistence\Repository\PayoutRepository;
+use CasinoEngine\Persistence\Repository\ProbabilityRepository;
 use CasinoEngine\Persistence\Repository\RoundRepository;
 use CasinoEngine\Services\Betting\BettingServiceInterface;
 use CasinoEngine\Services\Idempotency\IdempotencyStoreInterface;
@@ -71,7 +72,8 @@ final class RoundService
         private readonly RngFactory $rngFactory,
         private readonly ?EventDispatcherInterface $events = null,
         private readonly ?LoggerInterface $logger = null,
-        private readonly ?ProbabilityConfigServiceInterface $probability = null
+        private readonly ?ProbabilityConfigServiceInterface $probability = null,
+        private readonly ?ProbabilityRepository $probabilityRepository = null
     ) {
     }
 
@@ -120,7 +122,7 @@ final class RoundService
             throw $e;
         }
 
-        $this->afterCommit($result);
+        $this->afterCommit($result, $userId);
 
         return $result;
     }
@@ -346,8 +348,10 @@ final class RoundService
         return is_int($seed) ? $seed : null;
     }
 
-    private function afterCommit(RoundResult $result): void
+    private function afterCommit(RoundResult $result, int $userId): void
     {
+        $this->recordJackpot($result, $userId);
+
         if ($this->events === null) {
             return;
         }
@@ -384,5 +388,48 @@ final class RoundService
             'round_id' => $result->roundId,
             'game_id'  => $result->gameId,
         ]);
+    }
+
+    /**
+     * Persists a jackpot trigger for the administrator's jackpot history.
+     *
+     * Written after the money has committed, exactly like an event listener, so
+     * a failure here can never roll back a settled round. The row is
+     * append-only: the jackpot history is a record of what happened, never
+     * something a later configuration change rewrites.
+     */
+    private function recordJackpot(RoundResult $result, int $userId): void
+    {
+        if ($this->probabilityRepository === null) {
+            return;
+        }
+
+        foreach ($result->featureTransitions as $transition) {
+            if ($transition->type !== 'jackpot' || $transition->status !== FeatureTransition::STARTED) {
+                continue;
+            }
+
+            $tier = $transition->detail['tier'] ?? 'default';
+            $payoutMultiplier = $transition->detail['payout_multiplier'] ?? 0;
+            $probability = $transition->detail['probability'] ?? 0;
+
+            try {
+                $this->probabilityRepository->recordJackpot(
+                    $result->gameId,
+                    $userId,
+                    is_string($tier) ? $tier : 'default',
+                    is_numeric($probability) ? (float) $probability : 0.0,
+                    is_numeric($payoutMultiplier) ? (float) $payoutMultiplier : 0.0,
+                    $this->clock->now()->format('Y-m-d H:i:s')
+                );
+            } catch (Throwable $e) {
+                // The round is already settled; losing the history row must not
+                // surface as a failed round to the player.
+                $this->logger?->error('Failed to record jackpot event', [
+                    'game_id' => $result->gameId,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        }
     }
 }

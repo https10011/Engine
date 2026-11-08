@@ -130,4 +130,55 @@ final class SimulationStatisticsTest extends TestCase
         self::assertSame(0.5, $report['observed_rtp']);
         self::assertArrayHasKey('observed_rtp_ci95', $report);
     }
+
+    /**
+     * The three separately-configured trigger probabilities must be counted
+     * separately. Deriving them from the aggregate feature rate would report a
+     * jackpot rate inflated by every bonus wheel, which is exactly the metric
+     * confusion the directive forbids.
+     */
+    public function testTriggerRatesAreCountedSeparatelyPerEvent(): void
+    {
+        $statistics = new SimulationStatistics();
+        $statistics->record(100, 0, ['jackpot:started']);
+        $statistics->record(100, 0, ['bonus_wheel:started']);
+        $statistics->record(100, 0, ['free_spins:started']);
+        $statistics->record(100, 0, ['jackpot:started', 'free_spins:started']);
+        $statistics->record(100, 0, ['free_spins:ended']);
+
+        self::assertSame(2, $statistics->jackpotTriggers());
+        self::assertSame(1, $statistics->bonusTriggers());
+        self::assertSame(2, $statistics->freeSpinTriggers());
+
+        self::assertSame(0.4, $statistics->jackpotTriggerRate());
+        self::assertSame(0.2, $statistics->bonusTriggerRate());
+        self::assertSame(0.4, $statistics->freeSpinTriggerRate());
+    }
+
+    /**
+     * A feature that ends must not be counted as a trigger. A free spin that
+     * has just finished reports `free_spins:ended`, and counting it would make
+     * the free-spin rate climb with the length of every feature.
+     */
+    public function testAFeatureThatEndsIsNotATrigger(): void
+    {
+        $statistics = new SimulationStatistics();
+        $statistics->record(100, 0, ['free_spins:ended', 'bonus_wheel:updated']);
+
+        self::assertSame(0, $statistics->freeSpinTriggers());
+        self::assertSame(0, $statistics->bonusTriggers());
+    }
+
+    public function testTriggerCountsAppearInTheReport(): void
+    {
+        $statistics = new SimulationStatistics();
+        $statistics->record(100, 0, ['jackpot:started']);
+
+        $report = $statistics->toArray();
+
+        self::assertSame(1, $report['jackpot_triggers']);
+        self::assertSame(1.0, $report['jackpot_trigger_rate']);
+        self::assertArrayHasKey('bonus_trigger_rate', $report);
+        self::assertArrayHasKey('free_spin_trigger_rate', $report);
+    }
 }

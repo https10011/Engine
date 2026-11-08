@@ -33,6 +33,10 @@ use CasinoEngine\Core\Contract\Service\RngServiceInterface;
  *  3. The RNG stays independent: the class draw is independent of the outcome
  *     draws, so a 50% target yields a random half of winners, never a forced
  *     alternation.
+ *  4. A jackpot is exempt. A jackpot is a rare, independently configured event;
+ *     discarding a jackpot draw because the round's class did not match the
+ *     win-frequency target would deflate the configured jackpot probability.
+ *     A jackpot outcome is therefore always accepted.
  *
  * The bound is finite, so an unreachable class cannot hang a request. When the
  * bound is exhausted the last genuine outcome is returned and the shortfall is
@@ -76,7 +80,8 @@ final class WinFrequencyGovernor
 
         $outcome = $draw();
         $attempts = 1;
-        if ($this->matches($classify($outcome), $desired, $strictAnyWin)) {
+        $classification = $classify($outcome);
+        if ($classification->jackpotTriggered || $this->matches($classification, $desired, $strictAnyWin)) {
             return [
                 'outcome'    => $outcome,
                 'attempts'   => 1,
@@ -90,8 +95,9 @@ final class WinFrequencyGovernor
         while ($attempts < $bound) {
             $outcome = $draw();
             $attempts++;
+            $classification = $classify($outcome);
 
-            if ($this->matches($classify($outcome), $desired, $strictAnyWin)) {
+            if ($classification->jackpotTriggered || $this->matches($classification, $desired, $strictAnyWin)) {
                 return [
                     'outcome'    => $outcome,
                     'attempts'   => $attempts,

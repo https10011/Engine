@@ -9,6 +9,7 @@ use CasinoEngine\Frameworks\Slot\Evaluation\CompositeEvaluator;
 use CasinoEngine\Frameworks\Slot\Evaluation\PaylineEvaluator;
 use CasinoEngine\Frameworks\Slot\Evaluation\ScatterEvaluator;
 use CasinoEngine\Frameworks\Slot\Feature\FeatureInterface;
+use CasinoEngine\Frameworks\Slot\Feature\JackpotFeature;
 use CasinoEngine\Frameworks\Slot\Feature\SymbolSplitFeature;
 use CasinoEngine\Frameworks\Slot\SlotConfiguration;
 use CasinoEngine\Games\Slots\AbstractSlotGame;
@@ -78,7 +79,7 @@ final class FortuneGems3 extends AbstractSlotGame
                 new PaylineEvaluator(SlotParts::paylines3x3()),
                 new ScatterEvaluator()
             ),
-            static function (SlotConfiguration $configuration): array {
+            static function (SlotConfiguration $configuration, array $spinConfiguration = []): array {
                 /** @var list<FeatureInterface> $features */
                 $features = [];
 
@@ -89,6 +90,12 @@ final class FortuneGems3 extends AbstractSlotGame
                     0.25,
                     3
                 );
+
+                // The advertised four-tier jackpot. Only added when an
+                // administrator has configured a jackpot probability.
+                if (((float) ($spinConfiguration['jackpot_probability'] ?? 0.0)) > 0.0) {
+                    $features[] = new JackpotFeature();
+                }
 
                 return $features;
             },

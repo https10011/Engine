@@ -41,10 +41,14 @@ RoundService::buildContext()
 GameContext::probabilityProfile()
       │
       ▼
-Slot governor (WinFrequencyGovernor / JackpotService / trigger governors)
+Slot governor (WinFrequencyGovernor) and the module's own features
+      │  (a jackpot is an independent feature roll, exempt from the governor)
       │
       ▼
 The module's own evaluator — the outcome is always a genuine spin
+      │  a triggered jackpot is added to the reels' own payout, then capped
+      ▼
+RoundService — settles the round, then records the jackpot to jackpot_events
 ```
 
 ---
@@ -53,8 +57,7 @@ The module's own evaluator — the outcome is always a genuine spin
 
 | Table | Purpose |
 | --- | --- |
-| `probability_profiles` | One row per named profile; `is_global` marks the active global profile |
-| `probability_overrides` | Per-game override rows; a row's absence means "use global" |
+| `probability_profiles` | One row per profile: the single global row (`game_id` null) and one row per game override (`game_id` set). A game with no row falls back to global |
 | `probability_versions` | Immutable snapshot of a configuration version |
 | `probability_audit_log` | Every change: administrator, before, after, games, time, version |
 | `jackpot_events` | Recorded jackpot triggers for history and verification |
@@ -88,7 +91,7 @@ schema, in the service and in the dashboard:
 | Any-win | A round produced a payout > 0 | Governor re-draws losing spins up to the bound |
 | Net-positive | Payout > wager | Achieved through the game's own maths; a game whose payouts are all sub-1× reports the limitation |
 | RTP | Σ payout ÷ Σ wagered over many rounds | Disclosed payout scale |
-| Jackpot | A jackpot tier triggered | Independent roll, outside the normal win |
+| Jackpot | A jackpot tier triggered | Independent roll, outside the normal win; exempt from the win-frequency governor so a low any-win target cannot suppress it |
 | Bonus trigger | A bonus round started | Trigger-threshold governor |
 | Free-spin trigger | Free spins awarded | Trigger-threshold governor |
 
@@ -111,6 +114,9 @@ accept the last outcome drawn
 ```
 
 * Every accepted outcome is a real spin of the game's own reels.
+* A jackpot is never discarded: the class is drawn independently, and a jackpot
+  outcome is always accepted so a low any-win target cannot deflate the
+  configured jackpot probability.
 * The loop is bounded, so an unreachable target cannot hang a request.
 * When the bound is exhausted, the observed rate is recorded and reported; the
   dashboard shows "target 95%, observed 47%, unreachable under this game's
@@ -178,7 +184,24 @@ returns:
 * expected vs observed probability, standard error and a 95% confidence interval
 
 The report always distinguishes the theoretical configured target from the
-observed result.
+observed result. Jackpot, bonus and free-spin triggers are counted separately
+per event type from the round's feature transitions, so the jackpot rate is
+never inflated by an ordinary bonus wheel.
+
+### Jackpot lifecycle
+
+A jackpot is a distinct event, configured and reported independently of an
+ordinary win:
+
+1. The module rolls the jackpot only when `jackpot_probability` is positive; an
+   unconfigured game carries no jackpot event at all.
+2. The prize is added to the reels' own payout, then the game's max-win cap
+   applies, so a jackpot is never double-counted against a line win.
+3. `RoundService` writes the trigger to `jackpot_events` after the money has
+   committed, so the history is append-only and cannot roll back a settled
+   round. The admin dashboard reads that table for jackpot history.
+4. The roll is exempt from the win-frequency governor, so an unrelated any-win
+   target cannot deflate the configured jackpot probability.
 
 ---
 
@@ -205,6 +228,7 @@ probability and bonus probability in plain language, and is responsive.
 * Configuration application to new rounds; existing rounds unchanged.
 * Governor: a target is approached statistically and never by fabrication.
 * An unreachable target is reported, not silently claimed.
+* A jackpot roll survives a low any-win target and is paid and recorded.
 * All 18 games resolve their effective configuration.
 * No regression in the existing engine tests.
 

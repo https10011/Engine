@@ -351,6 +351,6 @@ verified, **[O]** observed, **[E]** estimated or **[U]** unverified.
 | 21 | Blackjack | **Complete** |
 | 22 | Roulette | **Complete** |
 | 23 | Game integration | **Complete** (all 18 games run through `RoundService`) |
-| 24 | Frontend | **Not started** — next |
-| 25 | Administrator panel (backend + frontend) | **Not started** |
-| 26 | Final verification and publication | Not started |
+| 24 | Frontend | **Complete** — lobby, catalog, slot/blackjack/roulette interfaces |
+| 25 | Administrator panel (backend + frontend) | **Complete** — global/per-game probability, jackpot, simulation, audit |
+| 26 | Final verification and publication | In progress |

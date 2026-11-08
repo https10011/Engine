@@ -269,7 +269,8 @@ final class Container
             $c->get(RngFactory::class),
             $c->get(EventDispatcherInterface::class),
             $c->logger(),
-            $c->get(ProbabilityConfigServiceInterface::class)
+            $c->get(ProbabilityConfigServiceInterface::class),
+            $c->get(ProbabilityRepository::class)
         );
 
         $this->factories[MigrationRunner::class] = fn (self $c): MigrationRunner => new MigrationRunner(

@@ -69,10 +69,16 @@ final class JackpotFeature implements FeatureInterface, SpinLifecycleInterface
         $payout = $tier === null ? 1000 : (int) round($tier['payout_multiplier']);
         $tierName = $tier === null ? 'default' : (string) $tier['name'];
 
+        // The step multiplier is deliberately 1: a jackpot is a prize paid on
+        // top of whatever the reels did, not a factor applied to a line win. If
+        // it were returned as a step multiplier it would (a) multiply a line
+        // win by the jackpot and (b) vanish entirely on a spin with no line
+        // win, which is the very case a jackpot most often arrives in. The
+        // module settles the prize from the transition instead.
         return new FeatureStep(
             ['rolled' => true, 'tier' => $tierName],
             null,
-            max(1, $payout),
+            1,
             false,
             [new FeatureTransition(
                 $this->type(),

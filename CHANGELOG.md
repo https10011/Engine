@@ -6,6 +6,35 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — jackpot configuration and settlement (2026-11-08)
+- `SpinResult::hasJackpot()` / `jackpotTier()` — a jackpot is now distinguishable
+  from an ordinary win by reading the round's feature transitions.
+- `AbstractSlotGame` adds a triggered jackpot prize to the reels' own payout
+  before the max-win cap, so a jackpot and a line win are never double-counted.
+- `RoundService::recordJackpot()` writes every trigger to `jackpot_events` in
+  `afterCommit()`, giving the administrator panel an append-only jackpot
+  history. `ProbabilityRepository` is the sole writer.
+- `SimulationStatistics` counts jackpot, bonus and free-spin triggers separately
+  and exposes per-feature rates; the simulation report and
+  `AdminController::compare()` now report the observed jackpot rate against the
+  configured probability.
+- `docs/ADMIN_PANEL.md` — the jackpot lifecycle, the corrected data model and the
+  governor's jackpot exemption are documented.
+
+### Fixed — jackpot probability was deflatable (2026-11-08)
+- `WinFrequencyGovernor` could re-draw a jackpot round when an any-win target was
+  set, silently reducing the configured jackpot probability below its value. A
+  jackpot outcome is now always accepted.
+
+### Added — frontend and administrator panel
+- `public/app.html` and `public/assets/` — lobby, game catalog with search and
+  filtering, and the slot, blackjack and roulette interfaces. All outcomes come
+  from the API; the client computes no result.
+- `/api/v1/admin/*` routes, `AdminMiddleware`, `AdminController` and
+  `public/assets/js/views/admin.js` — global and per-game probability
+  configuration, jackpot and bonus settings, configuration history, audit log
+  and the simulation/verification tool, gated by the `admin` role.
+
 ### Added — Phase 0 (2026-11-07)
 - `README.md` — project overview, documentation map, quick start.
 - `AUTONOMOUS_EXECUTION_PLAN.md` — 15-phase plan with objectives, tasks,

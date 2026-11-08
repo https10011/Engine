@@ -540,16 +540,25 @@ final class AdminController extends AbstractController
             ],
             'jackpot' => [
                 'configured' => $profile->jackpotProbability,
-                'observed'   => null,
-                'delta'      => null,
+                'observed'   => $observed['jackpot_trigger_rate'] ?? null,
+                'delta'      => $this->delta($profile->jackpotProbability, $observed['jackpot_trigger_rate'] ?? null),
+                'count'      => $observed['jackpot_triggers'] ?? 0,
+                'sample'     => $observed['rounds'] ?? null,
                 'note'       => $profile->jackpotProbability === null
                     ? 'No jackpot probability is configured for this game.'
-                    : 'Jackpot triggers are reported by the game module; the generic driver does not count them separately.',
+                    : 'Counted from jackpot feature triggers, independently of ordinary wins.',
             ],
             'bonus' => [
                 'configured' => $profile->bonusTriggerProbability,
-                'observed'   => $observed['feature_trigger_rate'] ?? null,
-                'delta'      => $this->delta($profile->bonusTriggerProbability, $observed['feature_trigger_rate'] ?? null),
+                'observed'   => $observed['bonus_trigger_rate'] ?? null,
+                'delta'      => $this->delta($profile->bonusTriggerProbability, $observed['bonus_trigger_rate'] ?? null),
+                'count'      => $observed['bonus_triggers'] ?? 0,
+            ],
+            'free_spin' => [
+                'configured' => $profile->freeSpinTriggerProbability,
+                'observed'   => $observed['free_spin_trigger_rate'] ?? null,
+                'delta'      => $this->delta($profile->freeSpinTriggerProbability, $observed['free_spin_trigger_rate'] ?? null),
+                'count'      => $observed['free_spin_triggers'] ?? 0,
             ],
         ];
     }

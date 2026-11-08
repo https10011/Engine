@@ -424,6 +424,43 @@ final class AdminApiTest extends DatabaseTestCase
         self::assertArrayHasKey('jackpot_probability', $response->data['metrics']);
     }
 
+    /**
+     * The whole jackpot path, through the real router: configure the roll, play
+     * a round as a player, then read the jackpot history back as the
+     * administrator. This is the seam the dashboard depends on — a configured
+     * jackpot that is paid must also be visible in the history the admin page
+     * renders.
+     */
+    public function testAConfiguredJackpotAppearsInTheAdminHistory(): void
+    {
+        $gameId = 'jili.fortune-gems-2';
+
+        $configure = $this->post("/api/v1/admin/probability/games/$gameId", [
+            'enabled' => true,
+            'jackpot_probability' => 1.0,
+            'jackpot_tiers' => ['grand' => ['probability' => 1.0, 'payout_multiplier' => 100.0]],
+        ], $this->asAdmin());
+        self::assertSame(200, $configure->status, $configure->body());
+
+        $create = $this->post('/api/v1/sessions', ['game_id' => $gameId], $this->asPlayer());
+        self::assertSame(201, $create->status, $create->body());
+        $sessionId = (string) $create->data['session']['id'];
+
+        $spin = $this->post("/api/v1/sessions/$sessionId/actions", [
+            'action' => 'spin',
+            'bet' => 100,
+        ], $this->asPlayer());
+        self::assertSame(200, $spin->status, $spin->body());
+
+        $history = $this->get('/api/v1/admin/jackpots', $this->asAdmin(), ['game_id' => $gameId]);
+        self::assertSame(200, $history->status, $history->body());
+        self::assertNotEmpty(
+            $history->data['history'],
+            'A jackpot paid to a player must appear in the administrator jackpot history.'
+        );
+        self::assertSame('grand', $history->data['history'][0]['tier']);
+    }
+
     // --------------------------------------------------------------- fixtures
 
     private function firstSlotId(): string

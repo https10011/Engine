@@ -1,22 +1,22 @@
 # Project Status
 
 > Single-page truth about where the project stands.
-> Last updated: Phase 23 audit (all 18 games integrated).
+> Last updated: Phase 24/25 — frontend SPA, admin panel, jackpot settlement.
 
 ---
 
 ## Current phase
 
-**Engine phases 0–14 complete and published. Directive phases 15–23 complete.**
+**Engine phases 0–14 complete and published. Directive phases 15–25 complete.**
 
 All eighteen target games (16 slots, blackjack, roulette) are implemented,
-registered and verified end to end through `RoundService`; see the phase board
-below and `GAME_DEVELOPMENT_ROADMAP.md`.
+registered and verified end to end through `RoundService`. The player frontend
+(`public/app.html` plus `public/assets/`) and the administrator panel
+(`/admin`) are implemented and reachable; the jackpot mechanic is settled into
+payouts and recorded for the admin jackpot history. See the phase board below
+and `GAME_DEVELOPMENT_ROADMAP.md`.
 
-**Next: Phase 24 — the frontend.** Nothing user-facing exists yet; `public/`
-holds only the front controller and `.htaccess`. Phase 25 (the administrator
-panel) follows. Neither may be described as complete until it exists and its
-tests pass.
+**Next: Phase 26 — final verification and publication.**
 
 ---
 
@@ -118,22 +118,34 @@ Implementation (highlights):
   blackjack and roulette under `src/Games/Table/`), three synthetic fixtures and
   a documented SDK example.
 * `src/Services/Probability/` — probability configuration service, profile
-  value object and win-frequency governor (backend only; not yet reachable by an
-  administrator — see Phase 25 below).
+  value object and win-frequency governor, reachable by an authorised
+  administrator through the `/api/v1/admin/*` routes.
+* `public/app.html`, `public/assets/css/`, `public/assets/js/` — the player
+  frontend (lobby, catalog, slot, blackjack, roulette, history, admin views).
 
 ---
 
 ## Test status
 
 ```
-composer check  =>  lint OK, PHPStan OK, 235 tests / 22534 assertions OK
+composer check  =>  lint OK, PHPStan OK, phpcs OK, 273 tests / 22770 assertions OK
 ```
 
 `composer test` runs the whole suite (unit, framework, games, integration,
 transaction, API, simulation). Integration tests skip cleanly when no database
 is reachable; in this environment they ran against MariaDB. Layer-by-layer
-detail is in `TESTING_STRATEGY.md` and the Phase 23 entry in
-`DEVELOPMENT_LOG.md`.
+detail is in `TESTING_STRATEGY.md` and the `DEVELOPMENT_LOG.md` entries.
+
+| Suite | Tests |
+| --- | --- |
+| `unit` | 46 |
+| `framework` | 56 |
+| `simulation` | 12 |
+| `integration` | 31 |
+| `transaction` | 10 |
+| `api` | 54 |
+| `games` (blackjack, roulette, slot jackpot wiring) | 64 |
+| **Total** | **273** |
 
 ---
 
@@ -214,32 +226,36 @@ evaluator, feature composition, metadata, registration, unit tests and
 specification document under `docs/games/`. Blackjack and roulette are complete
 tables on the card and roulette frameworks.
 
-### What is NOT implemented yet
+### What is implemented
 
-* **Frontend: nothing exists.** `public/` contains only `index.php` and
-  `.htaccess`. There is no lobby, no catalog, no game interface, no CSS and no
-  JavaScript. Every game is reachable only through the JSON API.
-* **Administrator panel: backend only, not wired.** `ProbabilityProfile`,
-  `ProbabilityConfigService`, `WinFrequencyGovernor`, `ProbabilityRepository`
-  and migrations `2026_01_02_000001_create_probability_tables.sql` /
-  `2026_01_02_000002_add_admin_role.sql` exist. Missing: admin authentication
-  and authorisation middleware, admin routes, admin controllers, the simulation
-  verification endpoint and the whole admin frontend. The `users.role` column is
-  written by the migration and **read by no code**.
+* **Frontend.** `public/app.html` plus `public/assets/css` and
+  `public/assets/js` deliver the lobby, game catalog with search/filter, a
+  per-game launch view, and the blackjack, roulette and slot interfaces
+  (`views/lobby.js`, `views/slot.js`, `views/blackjack.js`, `views/roulette.js`,
+  `views/table.js`, `views/history.js`). Every outcome comes from the backend
+  API; the client never decides a result.
+* **Administrator panel.** `public/assets/js/views/admin.js` plus the
+  `/api/v1/admin/*` routes, `AdminController`, `AdminMiddleware` and
+  `ProbabilityConfigService` give a logged-in administrator the global and
+  per-game probability controls, jackpot and bonus settings, configuration
+  history, audit log and the simulation/verification tool. The `users.role`
+  column gates access server-side.
 
 ### Test status at this audit
 
 ```
-composer check  =>  lint OK, PHPStan OK, 235 tests / 22534 assertions OK
+composer check  =>  lint OK, PHPStan OK, phpcs OK, 273 tests / 22770 assertions OK
 ```
 
 | Suite | Tests |
 | --- | --- |
-| Pre-existing engine (unit, framework, API, transaction, simulation) | 168 |
-| `tests/Games/Table/BlackjackTest.php` | 51 |
-| `tests/Games/Table/RouletteTest.php` | 46 |
-| Slot unit tests (16 games) | see `tests/Games/Slots/` |
-| `tests/Integration/AllGamesIntegrationTest.php` | 7 |
+| `unit` | 46 |
+| `framework` | 56 |
+| `simulation` | 12 |
+| `integration` | 31 |
+| `transaction` | 10 |
+| `api` | 54 |
+| `games` | 64 |
 
 ### Defects found by the Phase 23 integration audit
 
@@ -260,7 +276,9 @@ obtained and are not claimed. Three titles could not be verified at all and are
 implemented as clearly labelled configurable approximations (`KNOWN_ISSUES.md`
 KI-1, KI-2).
 
-The **frontend and the administrator panel are not yet built**. The backend
-probability configuration service exists but is not yet reachable by an
-administrator. Neither the frontend nor the admin panel may be described as
-complete until they exist and their tests pass.
+The **frontend and the administrator panel are implemented** and reachable
+(`public/app.html`, `/admin` via the `/api/v1/admin/*` routes). The probability
+configuration service is reachable by an authorised administrator, the jackpot
+mechanic is settled into payouts and recorded to `jackpot_events` for the admin
+jackpot history, and the simulation tool reports jackpot, bonus and free-spin
+triggers as separate counters.

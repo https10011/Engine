@@ -74,36 +74,25 @@ added at the same time.
 
 ---
 
-### KI-8 — The frontend does not exist
-**Severity:** high (scope — a directive deliverable)
-**Affected:** Phase 24
-**Detail:** `public/` contains only `index.php` (the API front controller) and
-`.htaccess`. There is no lobby, no game catalog, no slot interface, no blackjack
-interface, no roulette interface, no CSS and no JavaScript. Every game is
-reachable only by calling the JSON API directly.
-**Impact:** The directive's frontend requirements and their acceptance criteria
-are unmet. This is the largest outstanding item.
-**Mitigation:** Next phase. The API is complete and stable, so the frontend has
-a finished contract to build against.
+### KI-8 — The frontend does not exist (resolved)
+**Severity:** high (was scope — a directive deliverable)
+**Resolved:** Phase 24.
+**Detail:** Originally `public/` contained only `index.php` and `.htaccess`.
+`public/app.html`, `public/assets/css/*` and `public/assets/js/*` now implement
+the lobby, game catalog with search and filtering, per-game launch view, and the
+slot, blackjack and roulette interfaces, plus game history. Every outcome is
+fetched from the JSON API; the client never computes a result.
 
-### KI-9 — The administrator panel is backend-only and unreachable
-**Severity:** high (scope — a directive deliverable)
-**Affected:** Phase 25
-**Detail:** `ProbabilityProfile`, `ProbabilityConfigService`,
-`WinFrequencyGovernor` and `ProbabilityRepository` exist, and the migrations
-`2026_01_02_000001_create_probability_tables.sql` and
-`2026_01_02_000002_add_admin_role.sql` create the storage. What does **not**
-exist: administrator authentication, an admin-authorisation middleware, admin
-routes, admin controllers, a simulation-verification endpoint and the entire
-admin frontend. `users.role` is written by the migration and read by **no code**,
-so there is currently no way for any request to be recognised as an
-administrator's.
-**Impact:** The directive's mandatory administrator functionality and its
-additional acceptance criteria are unmet. The probability service cannot be
-reached by an administrator, so the engine currently always uses its default
-behaviour.
-**Mitigation:** Next phase after the frontend. The service layer and its storage
-are done and unit-tested; what remains is authorisation, transport and UI.
+### KI-9 — The administrator panel is backend-only and unreachable (resolved)
+**Severity:** high (was scope — a directive deliverable)
+**Resolved:** Phase 25.
+**Detail:** `AdminMiddleware` (server-side `admin` role check),
+`AdminController`, the `/api/v1/admin/*` routes and
+`public/assets/js/views/admin.js` now expose the probability configuration
+service. An administrator can set global and per-game any-win, net-positive,
+RTP, jackpot and bonus/free-spin probabilities, view configuration history and
+the audit log, and run the simulation/verification tool. `users.role` gates
+access; a player token receives 403, proven by `tests/Api/AdminApiTest.php`.
 
 ### KI-10 — Game mechanics are independent implementations, not replicas
 **Severity:** informative (documentation honesty)
@@ -139,8 +128,19 @@ now plays a real round of each of the eighteen games through `RoundService`.
 
 ## Not issues (deliberate scope)
 
-* The 18 named commercial clones are **not implemented** by design. This
-  delivery is the engine plus three synthetic fixtures.
-* There is no frontend, no artwork, no animation and no sound by design.
+* The 18 named commercial clones are **not replicas** by design: reel strips,
+  weights and paytables are independent implementations (see KI-10).
 * There is no real-money, payment, deposit, withdrawal or cryptocurrency code,
   and none will be added.
+
+---
+
+## Added by the jackpot work (Phase 25)
+
+### KI-12 — The jackpot is a simulated, disclosed prize
+**Severity:** informative
+**Detail:** Jackpot probability and tiers are administrator-configured values
+stored in `probability_profiles.jackpot_tiers`. A triggered jackpot is paid as
+an additional bet multiple, capped by the game's published max win, and recorded
+in `jackpot_events`. It is not a progressive pool and carries no real-money
+value.

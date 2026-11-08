@@ -548,11 +548,105 @@ composer check => lint OK, PHPStan OK, 235 tests / 22534 assertions OK
 
 ### Remaining work after this phase
 
-* Phase 24 — frontend (lobby, catalog, sixteen slot interfaces, blackjack,
-  roulette).
-* Phase 25 — administrator panel: backend service exists
-  (`src/Services/Probability/`, `ProbabilityRepository`, migrations
-  `2026_01_02_000001` and `2026_01_02_000002`), but **there is no admin
-  authentication wiring, no admin routes, no admin controllers and no admin
-  frontend**. The `users.role` column exists and is unused by any code.
+* Phase 24 — frontend.
+* Phase 25 — administrator panel.
 * Phase 26 — final verification and publication.
+
+---
+
+## Phase 24 — Frontend
+
+### What was built
+
+The API was complete and stable, so the frontend was built against the existing
+JSON contract. No PHP engine code was changed for this phase.
+
+| File | Role |
+| --- | --- |
+| `public/app.html` | SPA shell: header, balance, navigation, view mount point |
+| `public/assets/css/app.css` | Layout, typography, responsive breakpoints |
+| `public/assets/css/games.css` | Reel grids, cards, roulette table, bet chips |
+| `public/assets/css/views.css` | Lobby, catalog, admin and history views |
+| `public/assets/js/app.js` | Boot, routing, session and balance wiring |
+| `public/assets/js/lib/api.js` | Thin fetch wrapper over the JSON API |
+| `public/assets/js/lib/store.js` | In-memory session/catalog state |
+| `public/assets/js/lib/dom.js` | Element helpers (create, bind, render) |
+| `public/assets/js/lib/ui.js` | Buttons, toggles, sliders, toasts |
+| `public/assets/js/lib/shell.js` | Header, balance, navigation |
+| `public/assets/js/lib/sound.js` | Optional, user-toggled sound effects |
+| `public/assets/js/views/lobby.js` | Lobby and game catalog with search/filter |
+| `public/assets/js/views/slot.js` | Slot interface: grid, spin, bet, paytable, free spins, multipliers |
+| `public/assets/js/views/blackjack.js` | Blackjack: deal, hit, stand, double, split, insurance |
+| `public/assets/js/views/roulette.js` | Roulette: wheel, betting table, inside/outside bets, spin |
+| `public/assets/js/views/table.js` | Shared table-game chrome |
+| `public/assets/js/views/history.js` | Player round history |
+| `public/assets/js/views/admin.js` | Administrator panel (Phase 25) |
+
+Each slot view reads the game's own detail payload (symbols, paytable, feature
+transitions) so a free-spin game shows its free-spin state, a multiplier game
+shows its multipliers and a jackpot game announces the jackpot — the interface
+reflects the module's mechanics rather than a shared template with a new title.
+
+### Backend authority
+
+Every spin, deal, hit, stand and bet is sent to the API; the returned payout,
+balance and state are rendered. The client holds no RNG and computes no payout.
+Sound is off by default and user-controlled.
+
+---
+
+## Phase 25 — Administrator panel and jackpot settlement
+
+### Administrator panel
+
+| Component | Role |
+| --- | --- |
+| `src/Api/Middleware/AdminMiddleware` | Server-side `admin` role check on every admin route |
+| `src/Api/Controller/AdminController` | Overview, global profile, per-game profile, versions, restore, audit, simulation |
+| `src/Api/ApiKernel` | `/api/v1/admin/*` route table |
+| `public/assets/js/views/admin.js` | Dashboard, sliders, per-game cards, comparison, simulation, history, audit log |
+| `tests/Api/AdminApiTest.php` | Authorisation (403 for a player) and endpoint behaviour |
+
+### Jackpot settlement
+
+The jackpot is now a first-class, independently configurable event rather than
+a payout folded into the reels' own result:
+
+* `SpinResult::hasJackpot()` and `jackpotTier()` read the feature transitions,
+  so a jackpot is distinguishable from an ordinary win.
+* `AbstractSlotGame` adds the jackpot prize to the reels' own payout and then
+  applies the game's max-win cap, so the two are never double-counted.
+* `WinFrequencyGovernor` never discards a jackpot spin. Before this, a low
+  any-win target could re-draw a jackpot round and silently deflate the
+  configured jackpot probability.
+* `RoundService::recordJackpot()` writes the trigger to `jackpot_events` in
+  `afterCommit()`, after the money has settled, so the history is append-only
+  and cannot roll back a settled round. `ProbabilityRepository` is the only
+  writer. `Container` wires it in.
+* `SimulationStatistics` counts jackpot, bonus and free-spin triggers from the
+  transitions separately and exposes per-feature rates; `AdminController::compare()`
+  reports the observed jackpot rate against the configured probability.
+* A jackpot module only rolls when `jackpot_probability` is positive, so an
+  unconfigured game carries no jackpot event at all.
+
+### Tests added
+
+| Test | Covers |
+| --- | --- |
+| `tests/Games/Slots/JackpotWiringTest.php` (4) | `hasJackpot()` reads transitions; a non-jackpot spin reports none |
+| `tests/Integration/JackpotIntegrationTest.php` (5) | A configured jackpot is paid and recorded; clearing the override stops the roll; the effective profile carries the configuration; an unconfigured game resolves none; the governor does not discard a jackpot round |
+| `tests/Simulation/SimulationStatisticsTest.php` | Dedicated trigger counters |
+
+### Verification
+
+```
+vendor/bin/phpunit                      =>  272 tests, 22760 assertions OK
+composer lint                           =>  no syntax errors
+vendor/bin/phpcs --standard=phpcs.xml.dist  =>  0 errors
+vendor/bin/phpstan analyse              =>  No errors
+```
+
+### Remaining work after this phase
+
+* Phase 26 — final verification and publication: full acceptance-criteria pass,
+  deployment documentation refresh, final commit and push, remote verification.

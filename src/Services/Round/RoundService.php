@@ -23,6 +23,7 @@ use CasinoEngine\Persistence\Repository\RoundRepository;
 use CasinoEngine\Services\Betting\BettingServiceInterface;
 use CasinoEngine\Services\Idempotency\IdempotencyStoreInterface;
 use CasinoEngine\Services\Payout\PayoutServiceInterface;
+use CasinoEngine\Services\Probability\ProbabilityConfigServiceInterface;
 use CasinoEngine\Services\Rng\RngFactory;
 use CasinoEngine\Services\Session\SessionServiceInterface;
 use CasinoEngine\Services\Statistics\StatisticsServiceInterface;
@@ -69,7 +70,8 @@ final class RoundService
         private readonly Config $config,
         private readonly RngFactory $rngFactory,
         private readonly ?EventDispatcherInterface $events = null,
-        private readonly ?LoggerInterface $logger = null
+        private readonly ?LoggerInterface $logger = null,
+        private readonly ?ProbabilityConfigServiceInterface $probability = null
     ) {
     }
 
@@ -330,7 +332,9 @@ final class RoundService
             $game->metadata(),
             $game->defaultConfiguration(),
             $this->logger ?? new NullLogger(),
-            $this->clock
+            $this->clock,
+            [],
+            $this->probability?->effectiveFor($gameId)
         );
     }
 

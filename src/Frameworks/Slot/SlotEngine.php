@@ -12,6 +12,7 @@ use CasinoEngine\Frameworks\Slot\Evaluation\EvaluationResult;
 use CasinoEngine\Frameworks\Slot\Evaluation\GridEvaluatorInterface;
 use CasinoEngine\Frameworks\Slot\Feature\FeatureContext;
 use CasinoEngine\Frameworks\Slot\Feature\FeatureInterface;
+use CasinoEngine\Frameworks\Slot\Feature\SpinLifecycleInterface;
 use CasinoEngine\Frameworks\Slot\Grid\Grid;
 use CasinoEngine\Frameworks\Slot\Paytable\Paytable;
 use CasinoEngine\Frameworks\Slot\Reel\ReelConfiguration;
@@ -108,10 +109,16 @@ final class SlotEngine
         $highestMultiplier = 1;
 
         // Feature states are tracked per feature so a cascade loop advances a
-        // feature without discarding the others' progress.
+        // feature without discarding the others' progress. A feature that owns
+        // per-spin state gets a chance to reset it before the first evaluation;
+        // session-scoped state (free spins, a persistent meter) is left alone.
         $pending = [];
         foreach ($this->features as $feature) {
-            $pending[$feature->type()] = $state->featureState($feature->type());
+            $featureState = $state->featureState($feature->type());
+            if ($feature instanceof SpinLifecycleInterface) {
+                $featureState = $feature->onSpinStart($featureState);
+            }
+            $pending[$feature->type()] = $featureState;
         }
 
         $iterations = 0;
@@ -161,8 +168,12 @@ final class SlotEngine
                 }
 
                 if ($step->grid !== null) {
-                    // A feature that hands back a new grid (a cascade) is asking
-                    // for that grid to be evaluated too, so the chain continues.
+                    // A feature that hands back a new grid is asking for that
+                    // grid to be evaluated. The new grid becomes the working
+                    // grid for the features that follow in this same step, so
+                    // two features that both transform (a cascade that removes
+                    // and refills, then a rule that upgrades a symbol) compose
+                    // instead of the second discarding the first.
                     $grid = $step->grid;
                     $continueChain = true;
                 }

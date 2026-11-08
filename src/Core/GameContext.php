@@ -13,10 +13,15 @@ use Psr\Log\LoggerInterface;
 /**
  * The service bag handed to a game module.
  *
- * Deliberately narrow. It exposes randomness, configuration, logging, a clock
- * and feature flags — and nothing that can move money. A module therefore
- * cannot debit a wallet or write a transaction even by mistake; the only way
- * an outcome becomes currency is through the engine's round service.
+ * Deliberately narrow. It exposes randomness, configuration, logging, a clock,
+ * feature flags and — when an administrator has configured one — a probability
+ * policy. It exposes nothing that can move money, so a module cannot debit a
+ * wallet or write a transaction even by mistake; the only way an outcome
+ * becomes currency is through the engine's round service.
+ *
+ * The probability policy is optional and inert by default: a module written
+ * before the probability service existed keeps behaving identically, because
+ * `probabilityProfile()` returns an inactive profile.
  */
 final class GameContext
 {
@@ -27,7 +32,8 @@ final class GameContext
         private readonly GameConfigurationInterface $configuration,
         private readonly LoggerInterface $logger,
         private readonly ClockInterface $clock,
-        private array $featureFlags = []
+        private array $featureFlags = [],
+        private readonly ?\CasinoEngine\Services\Probability\ProbabilityProfile $probability = null
     ) {
     }
 
@@ -61,6 +67,19 @@ final class GameContext
         return $this->featureFlags[$name] ?? false;
     }
 
+    /**
+     * The effective probability policy for this round.
+     *
+     * Never null: a module can call `isActive()` on it without a null check,
+     * and an inactive profile means "the engine has configured nothing, play
+     * the game's own mathematics unchanged".
+     */
+    public function probabilityProfile(): \CasinoEngine\Services\Probability\ProbabilityProfile
+    {
+        return $this->probability
+            ?? \CasinoEngine\Services\Probability\ProbabilityProfile::inactive();
+    }
+
     public function withConfiguration(GameConfigurationInterface $configuration): self
     {
         return new self(
@@ -69,7 +88,21 @@ final class GameContext
             $configuration,
             $this->logger,
             $this->clock,
-            $this->featureFlags
+            $this->featureFlags,
+            $this->probability
+        );
+    }
+
+    public function withProbability(\CasinoEngine\Services\Probability\ProbabilityProfile $profile): self
+    {
+        return new self(
+            $this->rng,
+            $this->metadata,
+            $this->configuration,
+            $this->logger,
+            $this->clock,
+            $this->featureFlags,
+            $profile
         );
     }
 }

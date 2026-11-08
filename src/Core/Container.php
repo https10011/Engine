@@ -20,6 +20,7 @@ use CasinoEngine\Persistence\Repository\AuditRepository;
 use CasinoEngine\Persistence\Repository\BetRepository;
 use CasinoEngine\Persistence\Repository\IdempotencyRepository;
 use CasinoEngine\Persistence\Repository\PayoutRepository;
+use CasinoEngine\Persistence\Repository\ProbabilityRepository;
 use CasinoEngine\Persistence\Repository\RoundRepository;
 use CasinoEngine\Persistence\Repository\SessionRepository;
 use CasinoEngine\Persistence\Repository\RateLimitRepository;
@@ -37,6 +38,8 @@ use CasinoEngine\Services\Idempotency\IdempotencyStore;
 use CasinoEngine\Services\Idempotency\IdempotencyStoreInterface;
 use CasinoEngine\Services\Payout\PayoutService;
 use CasinoEngine\Services\Payout\PayoutServiceInterface;
+use CasinoEngine\Services\Probability\ProbabilityConfigService;
+use CasinoEngine\Services\Probability\ProbabilityConfigServiceInterface;
 use CasinoEngine\Services\Rng\RngFactory;
 use CasinoEngine\Services\Round\RoundService;
 use CasinoEngine\Services\Session\SessionService;
@@ -170,6 +173,7 @@ final class Container
             AuditRepository::class,
             TokenRepository::class,
             RateLimitRepository::class,
+            ProbabilityRepository::class,
             ] as $class
         ) {
             $this->factories[$class] = $make($class);
@@ -241,6 +245,12 @@ final class Container
 
         $this->factories[RngFactory::class] = static fn (): RngFactory => new RngFactory();
 
+        $this->factories[ProbabilityConfigServiceInterface::class] = fn (self $c): ProbabilityConfigServiceInterface
+            => new ProbabilityConfigService(
+                $c->get(ProbabilityRepository::class),
+                $c->get(ClockInterface::class)
+            );
+
         $this->factories[RoundService::class] = fn (self $c): RoundService => new RoundService(
             $c->get(GameRegistryInterface::class),
             $c->get(BettingServiceInterface::class),
@@ -258,7 +268,8 @@ final class Container
             $c->config,
             $c->get(RngFactory::class),
             $c->get(EventDispatcherInterface::class),
-            $c->logger()
+            $c->logger(),
+            $c->get(ProbabilityConfigServiceInterface::class)
         );
 
         $this->factories[MigrationRunner::class] = fn (self $c): MigrationRunner => new MigrationRunner(

@@ -22,15 +22,31 @@ use CasinoEngine\Frameworks\Slot\Grid\Grid;
  * `$maximumCascades` bounds the chain. A chain is not guaranteed to end (a
  * refill can win again indefinitely in theory), and an unbounded loop is both a
  * payout risk and a request that never returns.
+ *
+ * `$leavesWild` implements the symbol-transformation mechanic shared by a whole
+ * family of the target titles (Super Ace's Gold Card, Super Ace Deluxe's Golden
+ * Symbol, Piñata Wins' gold frame, Wild Bounty Showdown's gold frame, the
+ * Mahjong tiles): when a cell holding one of those symbols is removed by the
+ * cascade, it refills as the wild rather than from the strip. That is exactly
+ * what "becomes a wild when eliminated" means, and putting it here — rather than
+ * in a separate feature — is what keeps the transformation inside the cascade
+ * step that caused it, so the very next evaluation sees the wild.
  */
 final class CascadeFeature implements FeatureInterface
 {
     /** Strategies this feature implements. Anything else is a configuration error. */
     public const REFILL_STRATEGIES = ['reel_strip'];
 
+    /**
+     * @param list<string> $leavesWild Source symbols that refill as a wild when removed
+     * @param string|null $leavesWildSymbol The wild they become
+     */
     public function __construct(
         private readonly int $maximumCascades = 20,
-        private readonly string $refillStrategy = 'reel_strip'
+        private readonly string $refillStrategy = 'reel_strip',
+        private readonly array $leavesWild = [],
+        private readonly ?string $leavesWildSymbol = null,
+        private readonly float $leavesWildProbability = 1.0
     ) {
         if (!in_array($refillStrategy, self::REFILL_STRATEGIES, true)) {
             throw new ConfigurationException(sprintf(
@@ -148,9 +164,16 @@ final class CascadeFeature implements FeatureInterface
         foreach ($grid->cells() as $reelIndex => $column) {
             $kept = [];
             foreach ($column as $rowIndex => $symbolId) {
-                if (!isset($remove[$reelIndex][$rowIndex])) {
-                    $kept[] = $symbolId;
+                if (isset($remove[$reelIndex][$rowIndex])) {
+                    // A removed source symbol refills as the wild instead of
+                    // drawing from the strip: this is "the gold card becomes a
+                    // joker wild when it is eliminated".
+                    if ($this->becomesWild($symbolId, $context)) {
+                        $kept[] = (string) $this->leavesWildSymbol;
+                    }
+                    continue;
                 }
+                $kept[] = $symbolId;
             }
 
             $height = $grid->rowsFor($reelIndex);
@@ -168,5 +191,19 @@ final class CascadeFeature implements FeatureInterface
         }
 
         return Grid::fromCells($cells, $grid->symbolSet());
+    }
+
+    private function becomesWild(string $symbolId, FeatureContext $context): bool
+    {
+        if ($this->leavesWildSymbol === null || $this->leavesWild === []) {
+            return false;
+        }
+
+        if (!in_array($symbolId, $this->leavesWild, true)) {
+            return false;
+        }
+
+        return $this->leavesWildProbability >= 1.0
+            || $context->rng->chance($this->leavesWildProbability);
     }
 }

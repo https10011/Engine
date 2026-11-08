@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CasinoEngine\Api;
 
+use CasinoEngine\Api\Controller\AdminController;
 use CasinoEngine\Api\Controller\AuthController;
 use CasinoEngine\Api\Controller\GameController;
 use CasinoEngine\Api\Controller\PlayController;
@@ -11,6 +12,7 @@ use CasinoEngine\Api\Controller\SessionController;
 use CasinoEngine\Api\Controller\WalletController;
 use CasinoEngine\Api\Http\Request;
 use CasinoEngine\Api\Http\Response;
+use CasinoEngine\Api\Middleware\AdminMiddleware;
 use CasinoEngine\Api\Middleware\AuthMiddleware;
 use CasinoEngine\Api\Middleware\SessionOwnershipMiddleware;
 use CasinoEngine\Api\Route\Route;
@@ -18,9 +20,12 @@ use CasinoEngine\Api\Route\Router;
 use CasinoEngine\Core\Contract\Service\ClockInterface;
 use CasinoEngine\Core\Engine;
 use CasinoEngine\Core\Registry\GameRegistryInterface;
+use CasinoEngine\Persistence\Repository\ProbabilityRepository;
 use CasinoEngine\Persistence\Repository\RateLimitRepository;
+use CasinoEngine\Persistence\Repository\UserRepository;
 use CasinoEngine\Services\Auth\AuthService;
 use CasinoEngine\Services\Auth\AuthServiceInterface;
+use CasinoEngine\Services\Probability\ProbabilityConfigServiceInterface;
 use CasinoEngine\Services\History\HistoryServiceInterface;
 use CasinoEngine\Services\Round\RoundService;
 use CasinoEngine\Services\Session\SessionServiceInterface;
@@ -56,6 +61,7 @@ final class ApiKernel
         \assert($auth instanceof AuthService);
 
         $router->use('auth', new AuthMiddleware($auth));
+        $router->use('admin', new AdminMiddleware($container->get(UserRepository::class)));
         $router->use('session.owner', new SessionOwnershipMiddleware(
             $container->get(SessionServiceInterface::class)
         ));
@@ -70,6 +76,7 @@ final class ApiKernel
         $this->registerSessionRoutes($router, $container);
         $this->registerPlayRoutes($router, $container);
         $this->registerWalletRoutes($router, $container);
+        $this->registerAdminRoutes($router, $container);
 
         $version = (string) $this->engine->config()->get('engine.version', '1.0.0');
         $router->add(new Route('GET', '/api/v1/health', static fn (): Response => Response::ok([
@@ -109,6 +116,10 @@ final class ApiKernel
         $controller = new GameController($container->get(GameRegistryInterface::class));
 
         $router->add(new Route('GET', '/api/v1/games', $controller->index(...)));
+        // The lobby catalogue is registered before the `{gameId}` route so a
+        // request for `/api/v1/games/lobby` is not captured as a game id.
+        $router->add(new Route('GET', '/api/v1/games/lobby', $controller->lobby(...)));
+        $router->add(new Route('GET', '/api/v1/games/{gameId}/presentation', $controller->presentation(...)));
         $router->add(new Route('GET', '/api/v1/games/{gameId}', $controller->show(...)));
     }
 
@@ -141,6 +152,38 @@ final class ApiKernel
             ['auth', 'session.owner']
         ));
         $router->add(new Route('GET', '/api/v1/rounds/{roundId}', $controller->show(...), ['auth']));
+    }
+
+    /**
+     * The administrator probability surface.
+     *
+     * Every route carries both `auth` and `admin`. `admin` re-reads the role
+     * from the database, so a player token cannot reach these endpoints and a
+     * revoked administrator loses access on their next request.
+     */
+    private function registerAdminRoutes(Router $router, \CasinoEngine\Core\Container $container): void
+    {
+        $controller = new AdminController(
+            $this->engine,
+            $container->get(GameRegistryInterface::class),
+            $container->get(ProbabilityConfigServiceInterface::class),
+            $container->get(ProbabilityRepository::class)
+        );
+
+        $guard = ['auth', 'admin'];
+
+        $router->add(new Route('GET', '/api/v1/admin/overview', $controller->overview(...), $guard));
+        $router->add(new Route('GET', '/api/v1/admin/probability/global', $controller->globalProfile(...), $guard));
+        $router->add(new Route('POST', '/api/v1/admin/probability/global', $controller->saveGlobal(...), $guard));
+        $router->add(new Route('GET', '/api/v1/admin/probability/games', $controller->games(...), $guard));
+        $router->add(new Route('GET', '/api/v1/admin/probability/games/{gameId}', $controller->gameProfile(...), $guard));
+        $router->add(new Route('POST', '/api/v1/admin/probability/games/{gameId}', $controller->saveGame(...), $guard));
+        $router->add(new Route('POST', '/api/v1/admin/probability/games/{gameId}/reset', $controller->resetGame(...), $guard));
+        $router->add(new Route('GET', '/api/v1/admin/probability/versions', $controller->versions(...), $guard));
+        $router->add(new Route('POST', '/api/v1/admin/probability/restore', $controller->restore(...), $guard));
+        $router->add(new Route('GET', '/api/v1/admin/audit', $controller->audit(...), $guard));
+        $router->add(new Route('POST', '/api/v1/admin/simulate', $controller->simulate(...), $guard));
+        $router->add(new Route('GET', '/api/v1/admin/jackpots', $controller->jackpots(...), $guard));
     }
 
     private function registerWalletRoutes(Router $router, \CasinoEngine\Core\Container $container): void

@@ -1,0 +1,257 @@
+/* Table, history and administrator views.
+ *
+ * Split from `games.css` because these are not slots: a blackjack table is
+ * cards on felt, a roulette table is a wheel over a betting grid, and the
+ * administrator panel is a form. Keeping them in their own sheet means the
+ * slot cabinet's rules — the ragged grid, the symbol cells, the spin button —
+ * never have to be un-set by a later rule.
+ */
+
+/* =============================================================== blackjack */
+
+.table { display: grid; gap: 1.1rem; }
+.table--blackjack, .table--roulette { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+
+.table__felt {
+  display: grid; gap: 1.2rem; padding: clamp(0.9rem, 2.5vw, 1.6rem);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    radial-gradient(90% 70% at 50% 0%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 65%),
+    linear-gradient(180deg, color-mix(in oklab, var(--card-panel, #14213a) 70%, #06111f), #06111f);
+  min-height: 340px;
+}
+.table__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.table__status { margin: 0; color: var(--ink-dim); min-height: 1.4em; }
+
+.hands { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+.hand { display: grid; gap: 0.5rem; }
+.hand--active .hand__head { color: var(--accent-2); }
+.hand__head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.hand__label { font-size: 0.74rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+.hand__meta { font-size: 0.82rem; color: var(--ink-dim); }
+.hand__total { font-family: var(--mono); font-size: 0.95rem; color: var(--ink); margin-left: auto; }
+.hand__cards { display: flex; gap: 0.4rem; flex-wrap: wrap; min-height: 96px; align-items: center; }
+.hand__foot { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+/* A playing card. Scoped under `.table--blackjack` because `.card` is already
+ * the lobby's game tile; without the scope the tile's layout would leak here. */
+.table--blackjack .card {
+  display: grid; place-items: center; position: relative;
+  width: 64px; height: 92px; flex: none; padding: 0;
+  border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(160deg, #fdfdff, #e6e9f5);
+  color: #101828; font-weight: 800; cursor: default;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  animation: deal-in 240ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+  transform: none;
+}
+.table--blackjack .card:hover { transform: none; border-color: rgba(255, 255, 255, 0.16); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4); }
+.table--blackjack .card--red { color: #c81e3c; }
+.table--blackjack .card--back {
+  background:
+    repeating-linear-gradient(45deg, #1b2b52 0 6px, #16244a 6px 12px);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.card__rank { font-size: 1.35rem; line-height: 1; }
+.card__suit { font-size: 1.1rem; line-height: 1; }
+.card__back-mark { color: rgba(255, 255, 255, 0.55); font-size: 1.4rem; }
+
+@keyframes deal-in {
+  from { transform: translateY(-26px) rotate(-6deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ================================================================ roulette */
+
+.roulette__top { display: grid; gap: 1rem; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); }
+
+.wheel-wrap { position: relative; display: grid; place-items: center; }
+.wheel {
+  position: relative; width: 100%; max-width: 260px; aspect-ratio: 1 / 1;
+  border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 50% 50%, #0d1a2e 0 38%, #16263f 38% 100%);
+  border: 6px solid color-mix(in oklab, var(--accent) 45%, #0a1424);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.6);
+  will-change: transform;
+}
+.wheel__hub {
+  position: absolute; inset: 34%; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 40% 35%, #24385c, #0d1728);
+  border: 1px solid var(--line); color: var(--accent-2); font-size: 1.5rem; z-index: 2;
+}
+.wheel__pocket {
+  position: absolute; left: 50%; top: 0; height: 50%;
+  transform-origin: 50% 100%;
+  transform: translateX(-50%) rotate(var(--angle));
+  display: flex; justify-content: center; padding-top: 3px;
+  font-size: 0.6rem; font-weight: 700; font-family: var(--mono);
+}
+.wheel__pocket--red { color: #ff8898; }
+.wheel__pocket--black { color: #cfd8ea; }
+.wheel__pocket--green { color: #5be3a1; }
+.wheel__result {
+  position: absolute; inset: auto auto 50% 50%; transform: translate(-50%, 50%);
+  display: grid; place-items: center; min-width: 54px; height: 54px; border-radius: 50%;
+  font-family: var(--mono); font-size: 1.5rem; font-weight: 800; z-index: 6;
+  background: #06111f; border: 2px solid var(--line);
+  animation: pop 260ms ease-out both;
+}
+.wheel__result--red { color: #ff8898; border-color: #ff8898; }
+.wheel__result--black { color: #eef2ff; border-color: #eef2ff; }
+.wheel__result--green { color: #5be3a1; border-color: #5be3a1; }
+
+.felt {
+  display: grid; gap: 0.5rem; padding: 0.7rem;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: linear-gradient(180deg, #0d3b2b, #082619);
+}
+.felt__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.felt__number {
+  position: relative; font: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer;
+  padding: 0.55rem 0.2rem; border-radius: 6px; color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+.felt__number--red { background: #b3202f; }
+.felt__number--black { background: #16181d; }
+.felt__number--green { background: #14724c; }
+.felt__number:hover, .felt__outside:hover, .felt__dozen:hover, .felt__column:hover { transform: translateY(-1px); }
+.felt__number.is-backed, .felt__outside.is-backed, .felt__dozen.is-backed, .felt__column.is-backed {
+  box-shadow: inset 0 0 0 2px var(--accent-2);
+}
+.felt__number.is-winning, .felt__outside.is-winning, .felt__dozen.is-winning, .felt__column.is-winning {
+  box-shadow: inset 0 0 0 2px var(--win), 0 0 14px color-mix(in oklab, var(--win) 55%, transparent);
+}
+.bet-chip {
+  position: absolute; right: 3px; bottom: 3px;
+  background: var(--accent-2); color: #0b1120; font-family: var(--mono);
+  font-size: 0.58rem; font-weight: 800; padding: 0 3px; border-radius: 999px;
+}
+.felt__dozens, .felt__columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+.felt__columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.felt__outside-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+.felt__outside, .felt__dozen, .felt__column {
+  position: relative; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  padding: 0.5rem 0.2rem; border-radius: 6px; color: var(--ink);
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.felt__outside--red { background: #b3202f; }
+.felt__outside--black { background: #16181d; }
+
+.slip { display: grid; gap: 0.6rem; align-content: start; }
+.slip__list { display: grid; gap: 0.35rem; max-height: 240px; overflow: auto; }
+.slip__row {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 0.5rem;
+  padding: 0.3rem 0.5rem; border-radius: var(--radius-sm); background: var(--bg-elevated); font-size: 0.86rem;
+}
+.slip__remove {
+  font: inherit; cursor: pointer; border: 0; background: transparent; color: var(--ink-faint);
+  font-size: 1rem; line-height: 1; padding: 0 0.2rem;
+}
+.slip__remove:hover { color: var(--lose); }
+.slip__total { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); padding-top: 0.5rem; }
+
+.chip-btn {
+  font: inherit; font-weight: 800; cursor: pointer; font-family: var(--mono); font-size: 0.82rem;
+  width: 52px; height: 52px; border-radius: 50%;
+  border: 2px dashed color-mix(in oklab, var(--accent-2) 60%, transparent);
+  background: var(--panel-2); color: var(--ink);
+}
+.chip-btn[aria-pressed="true"] { border-style: solid; background: var(--accent-2); color: #0b1120; }
+
+.history-strip { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+.history-strip__dot {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #fff;
+}
+.history-strip__dot--red { background: #b3202f; }
+.history-strip__dot--black { background: #16181d; }
+.history-strip__dot--green { background: #14724c; }
+
+/* ================================================================ history */
+
+.history { display: grid; gap: 1.1rem; }
+.table-wrap { overflow-x: auto; }
+
+/* ================================================================ admin */
+
+.admin { display: grid; gap: 1.1rem; }
+.hero--admin { background: linear-gradient(160deg, #1b2a4d, #0f1626); }
+.admin__body { display: grid; gap: 1.1rem; }
+.admin__section { display: grid; gap: 1.1rem; }
+.admin__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.9rem; }
+
+.tabs--admin { border-bottom: 1px solid var(--line); }
+
+.admin__stats { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.stat {
+  display: grid; gap: 0.2rem; padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.stat__label { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.stat__value { font-size: 1.25rem; }
+
+.metric-list { display: grid; gap: 0.4rem; margin: 0.7rem 0; }
+.metric-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.8rem; align-items: center;
+  padding: 0.5rem 0.65rem; border-radius: var(--radius-sm); background: var(--bg-elevated);
+}
+.metric-row__name { display: grid; min-width: 0; }
+.metric-row__name small { font-size: 0.76rem; }
+.metric-row__value { color: var(--accent-2); }
+
+.panel--note { border-left: 3px solid var(--accent); }
+.notes { margin: 0.4rem 0; padding-left: 1.1rem; display: grid; gap: 0.3rem; color: var(--ink-dim); font-size: 0.9rem; }
+.notes strong { color: var(--ink); }
+
+.game-configs { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.config-card {
+  display: grid; gap: 0.6rem; padding: 0.9rem 1rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.config-card--override { border-color: color-mix(in oklab, var(--accent) 55%, transparent); }
+.config-card__head { display: flex; align-items: center; gap: 0.6rem; }
+.config-card__titles { display: grid; min-width: 0; }
+.config-card__titles .mono { font-size: 0.74rem; color: var(--ink-faint); }
+.config-card__head .tag { margin-left: auto; }
+.config-card__metrics { display: grid; gap: 0.3rem; }
+.config-card__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.editor { display: grid; gap: 0.7rem; margin: 0.9rem 0; }
+.editor__row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.9rem; align-items: center;
+  padding: 0.6rem 0.7rem; border-radius: var(--radius-sm); background: var(--bg-elevated);
+}
+.editor__label { display: grid; gap: 0.15rem; }
+.editor__label small { font-size: 0.76rem; }
+.editor__control { display: flex; align-items: center; gap: 0.5rem; }
+.editor__control .field__input { max-width: 120px; }
+.editor__unit { color: var(--ink-faint); font-family: var(--mono); }
+.editor__toggle { display: flex; align-items: center; gap: 0.6rem; color: var(--ink-dim); font-size: 0.9rem; }
+
+.slider { flex: 1; min-width: 120px; accent-color: var(--accent); }
+
+.sim-form { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
+.sim-form .admin__actions { grid-column: 1 / -1; margin-top: 0; }
+.sim-report { display: grid; gap: 1.1rem; }
+
+.comparison { display: grid; gap: 0.3rem; }
+.comparison--head {
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint);
+  padding: 0 0.65rem;
+}
+.comparison__row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; align-items: center;
+  padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); background: var(--bg-elevated); font-size: 0.88rem;
+}
+.comparison__name { color: var(--ink-dim); }
+
+@media (max-width: 940px) {
+  .table--blackjack, .table--roulette { grid-template-columns: minmax(0, 1fr); }
+  .roulette__top { grid-template-columns: minmax(0, 1fr); }
+  .editor__row { grid-template-columns: minmax(0, 1fr); }
+  .comparison--head, .comparison__row { grid-template-columns: 1.6fr 1fr 1fr 1fr; font-size: 0.8rem; }
+}

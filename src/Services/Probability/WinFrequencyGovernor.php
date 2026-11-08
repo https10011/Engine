@@ -4,113 +4,187 @@ declare(strict_types=1);
 
 namespace CasinoEngine\Services\Probability;
 
+use CasinoEngine\Core\Contract\Service\RngServiceInterface;
+
 /**
  * Steers a round towards a configured any-win / net-positive target without
  * ever fabricating an outcome.
  *
- * The mechanism is bounded rejection sampling. The governor is handed a
- * `draw()` callable that produces a *genuine* outcome and a `classify()`
- * callable that describes it. It draws, checks, and either accepts or draws
- * again, up to the profile's bound:
+ * A target is a *rate*, so the governor first decides — with its own
+ * independent draw against the configured probability — which class the round
+ * should be, and then accepts the first genuine outcome whose class matches:
  *
- *     draw outcome
- *     while attempts < bound and classification != target class:
- *         draw outcome again
- *     accept the last outcome drawn
+ *     want = draw from {net_positive: n, any_win_only: a - n, loss: 1 - a}
+ *     outcome = draw a genuine outcome
+ *     while attempts < bound and class(outcome) != want:
+ *         outcome = draw again
+ *     accept the outcome
  *
  * Three consequences follow, and each is deliberate:
  *
  *  1. Every accepted outcome is a real draw from the game's own reels. The
- *     governor never edits a grid, a symbol or a payout.
- *  2. The bound is finite, so an unreachable target cannot hang a request. When
- *     the bound is exhausted the governor returns the last genuine outcome and
- *     reports the shortfall, so the dashboard can say "target 95%, observed
- *     47%, unreachable under this game's rules" instead of claiming compliance.
- *  3. The RNG stream stays independent. A 50% target is a distribution goal
- *     over many rounds, not a rule that forces every second spin to win.
+ *     governor chooses *how many* genuine draws to take; it never edits a grid,
+ *     a symbol or a payout.
+ *  2. The observed class rate converges on the configured probability. Choosing
+ *     the class first is what makes the target a *rate*. A loop that instead
+ *     accepted the first satisfying draw saturated near 100%: over a bounded
+ *     number of attempts a satisfying draw is almost certain, so a 30%, 50% and
+ *     90% target all produced the same ~100% outcome.
+ *  3. The RNG stays independent: the class draw is independent of the outcome
+ *     draws, so a 50% target yields a random half of winners, never a forced
+ *     alternation.
+ *
+ * The bound is finite, so an unreachable class cannot hang a request. When the
+ * bound is exhausted the last genuine outcome is returned and the shortfall is
+ * reported, so the dashboard can say "target 95%, observed 47%, unreachable
+ * under this game's rules" instead of claiming compliance.
  */
 final class WinFrequencyGovernor
 {
+    public const CLASS_NET_POSITIVE = 'net_positive';
+    public const CLASS_ANY_WIN = 'any_win';
+    public const CLASS_LOSS = 'loss';
+
     /**
      * @param callable():mixed $draw Produces one genuine outcome.
      * @param callable(mixed):OutcomeClassification $classify Describes it.
-     * @return array{outcome:mixed,attempts:int,target_met:bool,target:?string}
+     * @return array{outcome:mixed,attempts:int,target_met:bool,target:?string,desired:?string}
      */
-    public function steer(ProbabilityProfile $profile, callable $draw, callable $classify): array
-    {
-        $first = $draw();
-        $classification = $classify($first);
-
-        $target = $this->targetClass($profile);
-        if ($target === null || $this->satisfies($classification, $target)) {
+    public function steer(
+        ProbabilityProfile $profile,
+        RngServiceInterface $rng,
+        callable $draw,
+        callable $classify
+    ): array {
+        $targets = $this->targets($profile);
+        if ($targets === []) {
             return [
-                'outcome'    => $first,
+                'outcome'    => $draw(),
                 'attempts'   => 1,
-                'target_met' => $target === null || $this->satisfies($classification, $target),
-                'target'     => $target,
+                'target_met' => true,
+                'target'     => null,
+                'desired'    => null,
+            ];
+        }
+
+        // Once a net-positive target is set, the two win classes have to be told
+        // apart, so an "any-win" round means a win that is *not* net-positive.
+        $strictAnyWin = $profile->netPositiveTarget !== null;
+        $label = $strictAnyWin ? self::CLASS_NET_POSITIVE : self::CLASS_ANY_WIN;
+
+        $desired = $this->desiredClass($rng, $targets);
+
+        $outcome = $draw();
+        $attempts = 1;
+        if ($this->matches($classify($outcome), $desired, $strictAnyWin)) {
+            return [
+                'outcome'    => $outcome,
+                'attempts'   => 1,
+                'target_met' => true,
+                'target'     => $label,
+                'desired'    => $desired,
             ];
         }
 
         $bound = max(1, $profile->maxResampleAttempts);
-        $outcome = $first;
-        $attempts = 1;
-
         while ($attempts < $bound) {
             $outcome = $draw();
             $attempts++;
 
-            if ($this->satisfies($classify($outcome), $target)) {
+            if ($this->matches($classify($outcome), $desired, $strictAnyWin)) {
                 return [
                     'outcome'    => $outcome,
                     'attempts'   => $attempts,
                     'target_met' => true,
-                    'target'     => $target,
+                    'target'     => $label,
+                    'desired'    => $desired,
                 ];
             }
         }
 
-        // The bound was exhausted without reaching the target class. The last
+        // The bound was exhausted without reaching the desired class. The last
         // genuine outcome is returned; the shortfall is reported rather than
-        // hidden by faking a win.
+        // hidden by faking a result.
         return [
             'outcome'    => $outcome,
             'attempts'   => $attempts,
             'target_met' => false,
-            'target'     => $target,
+            'target'     => $label,
+            'desired'    => $desired,
         ];
     }
 
     /**
-     * The class the profile is asking for, or null when it asks for nothing.
+     * The configured class probabilities.
      *
-     * A net-positive target is expressed through the any-win governor because a
-     * net-positive round is by definition also an any-win round; the game's own
-     * paytable decides whether a win is net-positive, and a game whose wins are
-     * all sub-1x is reported as unable to satisfy it.
+     * A net-positive round is by definition also an any-win round, so the
+     * any-win target is split into a net-positive part and a non-net-positive
+     * part. An any-win target below the net-positive one is contradictory;
+     * raising it keeps the engine consistent rather than silently satisfying
+     * neither.
+     *
+     * @return array<string, float>
      */
-    private function targetClass(ProbabilityProfile $profile): ?string
+    private function targets(ProbabilityProfile $profile): array
     {
         if (!$profile->enabled) {
-            return null;
+            return [];
         }
 
-        if ($profile->netPositiveTarget !== null) {
-            return 'net_positive';
+        $anyWin = $profile->anyWinTarget;
+        $netPositive = $profile->netPositiveTarget;
+
+        if ($anyWin === null && $netPositive === null) {
+            return [];
         }
 
-        if ($profile->anyWinTarget !== null) {
-            return 'any_win';
+        if ($anyWin !== null && $netPositive !== null && $netPositive > $anyWin) {
+            $anyWin = $netPositive;
         }
 
-        return null;
+        if ($anyWin === null) {
+            return [
+                self::CLASS_NET_POSITIVE => (float) $netPositive,
+                self::CLASS_ANY_WIN      => 0.0,
+                self::CLASS_LOSS         => max(0.0, 1.0 - (float) $netPositive),
+            ];
+        }
+
+        return [
+            self::CLASS_NET_POSITIVE => (float) ($netPositive ?? 0.0),
+            self::CLASS_ANY_WIN      => max(0.0, $anyWin - (float) ($netPositive ?? 0.0)),
+            self::CLASS_LOSS         => max(0.0, 1.0 - $anyWin),
+        ];
     }
 
-    private function satisfies(OutcomeClassification $classification, string $target): bool
+    /**
+     * Draws the class this round should be, from the configured probabilities.
+     *
+     * @param array<string, float> $targets
+     */
+    private function desiredClass(RngServiceInterface $rng, array $targets): string
     {
-        return match ($target) {
-            'net_positive' => $classification->netPositive,
-            'any_win'      => $classification->anyWin,
-            default        => true,
+        $roll = $rng->float();
+        $cumulative = 0.0;
+
+        foreach ($targets as $class => $probability) {
+            $cumulative += $probability;
+            if ($roll < $cumulative) {
+                return $class;
+            }
+        }
+
+        return self::CLASS_LOSS;
+    }
+
+    private function matches(OutcomeClassification $classification, string $desired, bool $strictAnyWin): bool
+    {
+        return match ($desired) {
+            self::CLASS_NET_POSITIVE => $classification->netPositive,
+            self::CLASS_ANY_WIN      => $classification->anyWin
+                && (!$strictAnyWin || !$classification->netPositive),
+            self::CLASS_LOSS         => !$classification->anyWin,
+            default                  => true,
         };
     }
 }

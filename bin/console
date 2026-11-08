@@ -24,6 +24,7 @@ use CasinoEngine\Cli\Command\RateLimitPurgeCommand;
 use CasinoEngine\Cli\Command\ServeCommand;
 use CasinoEngine\Cli\Command\SessionStartCommand;
 use CasinoEngine\Cli\Command\TokenPurgeCommand;
+use CasinoEngine\Cli\Command\UserAdminCommand;
 use CasinoEngine\Cli\Command\UserCreateCommand;
 use CasinoEngine\Cli\Command\WalletShowCommand;
 use CasinoEngine\Core\Bootstrap;
@@ -64,6 +65,7 @@ $application->registerAll([
     new DbMigrateCommand(),
     new DbStatusCommand(),
     new UserCreateCommand(),
+    new UserAdminCommand(),
     new WalletShowCommand(),
     new SessionStartCommand(),
     new SessionExpireCommand(),

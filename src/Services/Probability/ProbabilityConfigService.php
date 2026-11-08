@@ -86,9 +86,17 @@ final class ProbabilityConfigService implements ProbabilityConfigServiceInterfac
         $values['game_id'] = null;
         $profile = ProbabilityProfile::fromArray($values, null);
 
-        $this->persist($profile, $adminUserId, $adminUsername, 'global', 'Global probability profile updated');
+        $version = $this->persist(
+            $profile,
+            $adminUserId,
+            $adminUsername,
+            'global',
+            'Global probability profile updated'
+        );
 
-        return $profile;
+        // The stored version is returned so a caller (the dashboard) can report
+        // which version it just created without a second read.
+        return $profile->withVersion($version);
     }
 
     /**
@@ -110,9 +118,9 @@ final class ProbabilityConfigService implements ProbabilityConfigServiceInterfac
         $values['game_id'] = $gameId;
         $profile = ProbabilityProfile::fromArray($values, $gameId);
 
-        $this->persist($profile, $adminUserId, $adminUsername, $gameId, "Override saved for '$gameId'");
+        $version = $this->persist($profile, $adminUserId, $adminUsername, $gameId, "Override saved for '$gameId'");
 
-        return $profile;
+        return $profile->withVersion($version);
     }
 
     /** Removes an override so the game falls back to the global profile. */
@@ -189,7 +197,7 @@ final class ProbabilityConfigService implements ProbabilityConfigServiceInterfac
                 $profile->version
             );
 
-            $this->persist(
+            $newVersion = $this->persist(
                 $profile,
                 $adminUserId,
                 $adminUsername,
@@ -197,7 +205,7 @@ final class ProbabilityConfigService implements ProbabilityConfigServiceInterfac
                 "Restored version $version of '$profileName'"
             );
 
-            return $profile;
+            return $profile->withVersion($newVersion);
         }
 
         throw new \CasinoEngine\Core\Exception\ValidationException(
@@ -218,7 +226,7 @@ final class ProbabilityConfigService implements ProbabilityConfigServiceInterfac
         string $adminUsername,
         string $profileName,
         string $description
-    ): void {
+    ): int {
         $before = $this->repository->findProfile($profileName)?->toArray();
 
         $version = $this->repository->saveProfile(
@@ -243,6 +251,8 @@ final class ProbabilityConfigService implements ProbabilityConfigServiceInterfac
         );
 
         $this->invalidate();
+
+        return $version;
     }
 
     private function now(): string

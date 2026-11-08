@@ -1,0 +1,201 @@
+/* Slot game interface styles.
+ *
+ * The grid, the cabinet, the symbols and the win presentation. Every colour
+ * comes from a custom property the view sets from the game's theme, so one
+ * stylesheet themes sixteen titles. The *layout* varies too: a ways game with
+ * 3-4-5-4-3 rows draws a ragged grid because the view sets `--reel-rows` per
+ * reel, not because there is a stylesheet per game.
+ */
+
+.slot {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.slot__stage { display: grid; gap: 0.9rem; min-width: 0; }
+
+.slot__head {
+  display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+  padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius);
+  background: linear-gradient(150deg, var(--panel), var(--bg-elevated));
+}
+.slot__emblem {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border-radius: 12px; font-size: 1.5rem;
+  background: linear-gradient(150deg, var(--accent), var(--accent-2)); color: #06111f;
+}
+.slot__titles { display: grid; min-width: 0; }
+.slot__name { font-size: 1.15rem; font-weight: 750; }
+.slot__provider { color: var(--ink-faint); font-size: 0.8rem; }
+.slot__head .spacer { flex: 1; }
+.slot__badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* --------------------------------------------------------------- cabinet */
+
+.cabinet {
+  position: relative; border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    radial-gradient(120% 90% at 50% -20%, color-mix(in oklab, var(--accent) 26%, transparent), transparent 60%),
+    var(--panel);
+  padding: clamp(0.7rem, 2vw, 1.2rem);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.cabinet::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  border-radius: var(--radius); box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.reels {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: clamp(4px, 1vw, 10px);
+  padding: clamp(6px, 1.5vw, 14px);
+  border-radius: var(--radius-sm);
+  background: rgba(4, 8, 18, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  perspective: 900px;
+}
+
+.reel { display: grid; gap: clamp(4px, 1vw, 8px); align-content: start; }
+
+.cell {
+  position: relative; display: grid; place-items: center;
+  aspect-ratio: 1 / 1; min-height: 44px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: clamp(1.1rem, 2.6vw, 1.9rem);
+  font-weight: 700;
+  color: var(--ink);
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+  user-select: none;
+}
+.cell--wild { color: var(--accent-2); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent-2) 55%, transparent); }
+.cell--scatter { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 55%, transparent); }
+.cell--bonus { color: #ffd166; }
+.cell--blank { opacity: 0.25; }
+.cell--win {
+  background: linear-gradient(160deg, color-mix(in oklab, var(--win) 42%, transparent), transparent);
+  box-shadow: 0 0 0 2px var(--win), 0 0 24px color-mix(in oklab, var(--win) 45%, transparent);
+  transform: scale(1.05);
+  z-index: 2;
+}
+.cell--dim { opacity: 0.32; }
+.cell__label {
+  position: absolute; bottom: 3px; left: 0; right: 0;
+  font-size: 0.52rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 600; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;
+}
+
+.reels.is-spinning .reel { animation: reel-blur 380ms linear infinite; }
+.reel--stopping { animation: reel-drop 240ms ease-out both; }
+
+@keyframes reel-blur {
+  0% { transform: translateY(-6%) scaleY(1.03); filter: blur(1.4px); }
+  50% { transform: translateY(6%) scaleY(1.03); filter: blur(1.4px); }
+  100% { transform: translateY(-6%) scaleY(1.03); filter: blur(1.4px); }
+}
+@keyframes reel-drop { from { transform: translateY(-16%); opacity: 0.4; } to { transform: none; opacity: 1; } }
+
+/* --------------------------------------------------------------- overlays */
+
+.overlay {
+  position: absolute; inset: 0; display: grid; place-items: center; gap: 0.4rem;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(3, 7, 16, 0.82), rgba(3, 7, 16, 0.94));
+  text-align: center; z-index: 5; padding: 1rem;
+}
+.overlay__title { font-size: clamp(1.3rem, 4vw, 2.2rem); font-weight: 800; letter-spacing: 0.02em; color: var(--accent-2); }
+.overlay__sub { color: var(--ink); font-size: 1rem; }
+.overlay__count {
+  font-family: var(--mono); font-size: clamp(1.8rem, 6vw, 3rem);
+  font-weight: 800; color: var(--win);
+}
+.overlay--win { animation: fade-in 220ms ease-out both; }
+
+/* --------------------------------------------------------------- controls */
+
+.controls {
+  display: grid; gap: 0.7rem; padding: 0.9rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.controls__row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.controls__row .spacer { flex: 1; }
+
+.readout {
+  display: grid; gap: 0.15rem; min-width: 8.5rem;
+  padding: 0.45rem 0.7rem; border-radius: var(--radius-sm);
+  background: var(--bg-elevated); border: 1px solid var(--line);
+}
+.readout__label { font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); }
+.readout__value { font-family: var(--mono); font-size: 1.05rem; color: var(--ink); }
+.readout--win .readout__value { color: var(--win); }
+.readout.is-pulsing { animation: pop 420ms ease-out; }
+
+.spin {
+  --size: clamp(78px, 12vw, 104px);
+  width: var(--size); height: var(--size); border-radius: 50%;
+  border: 3px solid color-mix(in oklab, var(--accent-2) 70%, transparent);
+  background: radial-gradient(circle at 35% 30%, var(--accent), color-mix(in oklab, var(--accent) 45%, #000));
+  color: #06111f; font-weight: 800; font-size: 0.95rem; letter-spacing: 0.06em;
+  cursor: pointer; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  transition: transform 110ms ease, filter var(--speed);
+}
+.spin:hover:not(:disabled) { filter: brightness(1.08); }
+.spin:active:not(:disabled) { transform: scale(0.95); }
+.spin:disabled { filter: grayscale(0.6) brightness(0.7); cursor: not-allowed; }
+.spin.is-spinning { animation: spin-pulse 900ms linear infinite; }
+@keyframes spin-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 60%, transparent); } 50% { box-shadow: 0 0 0 14px transparent; } }
+
+.stepper { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--bg-elevated); }
+.stepper button {
+  font: inherit; font-weight: 800; cursor: pointer; border: 0; background: transparent; color: var(--ink);
+  padding: 0.45rem 0.85rem; font-size: 1rem;
+}
+.stepper button:hover:not(:disabled) { background: var(--panel-2); }
+.stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+.stepper output { font-family: var(--mono); padding: 0 0.6rem; min-width: 5.5rem; text-align: center; }
+
+.sound-toggle { background: transparent; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-dim); font: inherit; font-size: 0.8rem; padding: 0.4rem 0.8rem; cursor: pointer; }
+.sound-toggle:hover { color: var(--ink); border-color: var(--accent); }
+
+/* --------------------------------------------------------------- side panel */
+
+.slot__side { display: grid; gap: 0.9rem; }
+
+.tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--line); margin-bottom: 0.7rem; flex-wrap: wrap; }
+.tab {
+  font: inherit; font-size: 0.85rem; font-weight: 650; cursor: pointer;
+  background: transparent; border: 0; border-bottom: 2px solid transparent;
+  color: var(--ink-dim); padding: 0.45rem 0.7rem;
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+.paytable { display: grid; gap: 0.4rem; }
+.paytable__row {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 0.55rem;
+  padding: 0.35rem 0.45rem; border-radius: var(--radius-sm); background: var(--bg-elevated);
+}
+.paytable__symbol { display: grid; place-items: center; height: 32px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); font-weight: 700; }
+.paytable__name { font-size: 0.86rem; }
+.paytable__name small { display: block; color: var(--ink-faint); font-size: 0.7rem; }
+.paytable__pays { display: flex; gap: 0.5rem; font-family: var(--mono); font-size: 0.8rem; color: var(--accent-2); }
+
+.rules { display: grid; gap: 0.55rem; font-size: 0.88rem; color: var(--ink-dim); }
+.rules ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
+.rules strong { color: var(--ink); }
+
+.history-list { display: grid; gap: 0.3rem; max-height: 260px; overflow: auto; }
+.history-list__row { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.84rem; padding: 0.3rem 0.45rem; border-radius: 7px; background: var(--bg-elevated); }
+.history-list__row .net { font-family: var(--mono); }
+.net--up { color: var(--win); }
+.net--down { color: var(--lose); }
+
+@media (max-width: 940px) {
+  .slot { grid-template-columns: minmax(0, 1fr); }
+  .slot__side { order: 2; }
+}

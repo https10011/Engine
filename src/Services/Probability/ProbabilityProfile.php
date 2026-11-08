@@ -128,6 +128,26 @@ final class ProbabilityProfile
         return max(0.0, min(1000.0, $this->payoutScale));
     }
 
+    /** A copy of this profile stamped with the version it was stored as. */
+    public function withVersion(int $version): self
+    {
+        return new self(
+            $this->name,
+            $this->gameId,
+            $this->anyWinTarget,
+            $this->netPositiveTarget,
+            $this->rtpTarget,
+            $this->jackpotProbability,
+            $this->bonusTriggerProbability,
+            $this->freeSpinTriggerProbability,
+            $this->payoutScale,
+            $this->jackpotTiers,
+            $this->enabled,
+            $this->maxResampleAttempts,
+            $version
+        );
+    }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {

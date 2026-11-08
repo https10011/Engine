@@ -14,7 +14,7 @@ final class UserRepository extends AbstractRepository
     public function findById(int $userId): ?array
     {
         return $this->fetchOne(
-            'SELECT id, username, display_name, status, created_at, updated_at FROM users WHERE id = ?',
+            'SELECT id, username, display_name, status, role, created_at, updated_at FROM users WHERE id = ?',
             [$userId]
         );
     }
@@ -23,7 +23,7 @@ final class UserRepository extends AbstractRepository
     public function findByUsername(string $username): ?array
     {
         return $this->fetchOne(
-            'SELECT id, username, display_name, status, created_at, updated_at FROM users WHERE username = ?',
+            'SELECT id, username, display_name, status, role, created_at, updated_at FROM users WHERE username = ?',
             [$username]
         );
     }
@@ -59,5 +59,27 @@ final class UserRepository extends AbstractRepository
     public function exists(int $userId): bool
     {
         return $this->fetchOne('SELECT 1 AS present FROM users WHERE id = ?', [$userId]) !== null;
+    }
+
+    /** Whether the account holds the administrator role, read from the database. */
+    public function isAdmin(int $userId): bool
+    {
+        $row = $this->fetchOne("SELECT 1 AS present FROM users WHERE id = ? AND role = 'admin'", [$userId]);
+
+        return $row !== null;
+    }
+
+    /**
+     * Grants or revokes the administrator role.
+     *
+     * The role lives in the database rather than in a token claim, so revoking
+     * it takes effect on the next request instead of when a token expires.
+     */
+    public function setRole(int $userId, string $role, string $now): void
+    {
+        $this->execute(
+            'UPDATE users SET role = ?, updated_at = ? WHERE id = ?',
+            [$role, $now, $userId]
+        );
     }
 }

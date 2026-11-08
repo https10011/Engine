@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b1120">
+<title>Casino — Universal Game Engine</title>
+<link rel="stylesheet" href="/assets/css/app.css">
+<link rel="stylesheet" href="/assets/css/games.css">
+<link rel="stylesheet" href="/assets/css/views.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <a class="brand" href="/" data-link>
+    <span class="brand__mark" aria-hidden="true">♠</span>
+    <span class="brand__name">Casino</span>
+  </a>
+
+  <nav class="topbar__nav" aria-label="Primary">
+    <a href="/" data-link data-nav="lobby">Lobby</a>
+    <a href="/slots" data-link data-nav="slots">Slots</a>
+    <a href="/tables" data-link data-nav="tables">Tables</a>
+    <a href="/history" data-link data-nav="history" data-requires-auth hidden>History</a>
+    <a href="/admin" data-link data-nav="admin" data-requires-admin hidden>Admin</a>
+  </nav>
+
+  <div class="topbar__account">
+    <span class="balance" data-balance hidden aria-live="polite">
+      <span class="balance__label">Balance</span>
+      <strong class="balance__value">—</strong>
+    </span>
+    <span class="who" data-who hidden></span>
+    <button type="button" class="btn btn--ghost" data-action="open-login" data-when="anonymous">Sign in</button>
+    <button type="button" class="btn btn--ghost" data-action="logout" data-when="authenticated" hidden>Sign out</button>
+  </div>
+</header>
+
+<main id="main" class="app" data-view="lobby" aria-live="polite"></main>
+
+<footer class="footer">
+  <p>
+    Virtual credits only. No deposits, no withdrawals, no real-money play.
+    Every outcome is produced by the server; the browser never decides a result.
+  </p>
+</footer>
+
+<div class="toasts" data-toasts aria-live="assertive" aria-atomic="false"></div>
+
+<!-- Sign-in dialog. A native <dialog> so focus handling and Esc come for free. -->
+<dialog class="modal" data-modal="login">
+  <form method="dialog" class="modal__panel" data-form="login">
+    <h2 class="modal__title">Sign in</h2>
+    <p class="modal__hint">Use a player account to play. New here? Register a username below.</p>
+
+    <label class="field">
+      <span class="field__label">Username</span>
+      <input class="field__input" name="username" autocomplete="username" required
+             pattern="[A-Za-z0-9._-]{3,64}" minlength="3" maxlength="64">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Password</span>
+      <input class="field__input" name="password" type="password"
+             autocomplete="current-password" minlength="10" required>
+    </label>
+
+    <p class="modal__error" data-error hidden role="alert"></p>
+
+    <div class="modal__actions">
+      <button type="button" class="btn btn--ghost" data-action="close-modal">Cancel</button>
+      <button type="submit" class="btn btn--primary" data-submit="login">Sign in</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="/assets/js/app.js"></script>
+</body>
+</html>

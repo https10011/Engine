@@ -52,6 +52,19 @@ abstract class AbstractSlotGame implements GameInterface
 {
     abstract protected function definition(): SlotGameDefinition;
 
+    /**
+     * The definition, readable from outside the module.
+     *
+     * A frontend needs the same symbols, paytable and grid shape the engine
+     * spins, and it must get them from the game rather than re-deriving them.
+     * This exposes the definition for presentation without widening the
+     * `protected` hook subclasses implement.
+     */
+    public function slotDefinition(): SlotGameDefinition
+    {
+        return $this->definition();
+    }
+
     public function category(): GameCategory
     {
         return GameCategory::Slot;
@@ -191,7 +204,7 @@ abstract class AbstractSlotGame implements GameInterface
         };
 
         $governor = new WinFrequencyGovernor();
-        $result = $governor->steer($profile, $draw, $classify);
+        $result = $governor->steer($profile, $context->rng(), $draw, $classify);
 
         /** @var SpinResult $spin */
         $spin = $result['outcome'];

@@ -171,6 +171,12 @@ final class AuthService implements AuthServiceInterface
             'id'           => (int) $user['id'],
             'username'     => (string) $user['username'],
             'display_name' => (string) $user['display_name'],
+            // The role is reported so the client can hide the administrator
+            // navigation. It is *not* what authorises anything: the admin
+            // middleware re-reads the role from the database on every request,
+            // so a player cannot reach an administrator endpoint by editing a
+            // response in the browser.
+            'role'         => (string) ($user['role'] ?? 'player'),
         ];
     }
 }

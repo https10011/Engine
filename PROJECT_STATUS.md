@@ -166,8 +166,9 @@ None. Every tool needed for the remaining phases is installed and working.
 | Phase 21–22 commit | `d0ee39d` — blackjack and roulette table games |
 | Phase 23 commit | `15478eb` — all 18 games integrated, multiplier columns widened |
 | Phase 24–25 commit | `4696202` — frontend SPA, admin panel, jackpot settlement |
+| Phase 26 commit | `b356240` — final verification, KI-13 and KI-14 fixed |
 | Remote branch | `main` (origin) → `https://github.com/https10011/Engine.git` |
-| Push verified | yes — `git ls-remote origin main` = `4696202998e64ef3eff4cbe8e5ef20c29ca2fc70` |
+| Push verified | yes — `git ls-remote origin main` = `b356240da19c41d1cb6e75f1827859d77d521a78` |
 | Verified at | Phase 26 audit, 2026-11-08 |
 
 Each directive phase is committed and pushed to `origin/main` as it completes.

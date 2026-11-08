@@ -31,4 +31,6 @@ Thumbs.db
 # Local scratch
 *.local
 /artifacts/
-/storage/dev-server*.log
+/storage/*.log
+/storage/*.pid
+/htdocs/.env

@@ -1,0 +1,5 @@
+{
+    "generated_at": "2026-11-08T18:06:29+00:00",
+    "generator": "tools/build_htdocs.php",
+    "note": "Generated production bundle. Edit the source tree and rebuild; do not edit these files directly."
+}

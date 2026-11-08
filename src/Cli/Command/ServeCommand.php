@@ -67,7 +67,7 @@ final class ServeCommand extends AbstractCommand
         $this->line("API base:           http://$bound/api/v1");
         $this->line('');
         $this->line('This is a development server. Production uses a real web server');
-        $this->line('with its document root set to public/ (see DEPLOYMENT_GUIDE.md).');
+        $this->line('with its document root set to public/ (see documentation/deployment/SHARED_HOSTING_DEPLOYMENT.md).');
         $this->line('');
         $this->line('Press Ctrl+C to stop.');
         $this->line('');

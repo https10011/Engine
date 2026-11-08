@@ -1,0 +1,62 @@
+# AURUM production front controller (Apache / LiteSpeed shared hosting).
+#
+# The document root must be this directory. Source, configuration, migrations,
+# vendor code and logs live below it and are denied by their own .htaccess
+# files; the rewrite sends application routes to index.php while letting real
+# static files through.
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Some CGI/FastCGI hosts strip Authorization; carry it through so bearer
+    # tokens still reach the API.
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+    # Existing files (CSS, JS, SVG) are served by the web server. Everything
+    # else is an application route handled by the front controller.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    # Without rewriting the SPA routes cannot work; fail closed rather than
+    # exposing a directory listing or a partial application.
+    Require all denied
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set X-Frame-Options "DENY"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'"
+    # Enable after HTTPS is confirmed:
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# Dotfiles (.env, .htaccess, build marker) are never served.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Backups, schema dumps and documentation must not be downloadable.
+<FilesMatch "\.(env|sql|md|log|ini|lock|json|dist|neon|sh|bak|old|orig|save|swp)$">
+    Require all denied
+</FilesMatch>
+
+# Long-lived, immutable assets; the filenames do not change between builds.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 30 days"
+    ExpiresByType application/javascript "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml application/json
+</IfModule>

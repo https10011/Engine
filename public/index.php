@@ -19,9 +19,15 @@ use CasinoEngine\Api\Http\Request;
 use CasinoEngine\Api\Http\Response;
 use CasinoEngine\Core\Bootstrap;
 
-// Resolve the application root even when the project is deployed with the
-// source tree outside the document root.
-$root = dirname(__DIR__);
+// Resolve the application root. The repository layout keeps the entry point in
+// `public/` with the source above it; the self-contained `htdocs/` build puts
+// the entry point and source side by side. Detect the self-contained layout by
+// its own `src/` and `config/` — checking the parent for a vendor directory is
+// not enough, because an `htdocs/` folder inside the repository has one above
+// it and would silently read the development `.env`.
+$root = is_dir(__DIR__ . '/src') && is_file(__DIR__ . '/config/app.php')
+    ? __DIR__
+    : dirname(__DIR__);
 
 $autoload = $root . '/vendor/autoload.php';
 if (!is_file($autoload)) {
@@ -47,6 +53,27 @@ require $autoload;
 // correct content type.
 if (PHP_SAPI === 'cli-server') {
     $assetPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+    // The built-in server serves existing files directly when the router
+    // returns false. Never hand it a source, configuration, migration or log
+    // file: Apache enforces this with .htaccess, and this guard gives the same
+    // protection when the production tree is smoke-tested locally.
+    $privatePrefixes = ['/src/', '/config/', '/database/', '/vendor/', '/storage/', '/bin/'];
+    foreach ($privatePrefixes as $prefix) {
+        if (str_starts_with($assetPath, $prefix)) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo 'Not found.';
+            exit;
+        }
+    }
+    if (preg_match('#/(\.|[^/]*\.(?:env|sql|md|log|ini|lock|json|dist|neon)(?:$|\?))#i', $assetPath) === 1) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Not found.';
+        exit;
+    }
+
     $candidate = realpath(__DIR__ . $assetPath);
     if (
         $assetPath !== '/'

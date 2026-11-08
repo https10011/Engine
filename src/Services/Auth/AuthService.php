@@ -29,11 +29,19 @@ use CasinoEngine\Persistence\Repository\UserRepository;
  */
 final class AuthService implements AuthServiceInterface
 {
-    /** Recognised values of `security.password_algo`, mapped to PHP's constants. */
-    private const PASSWORD_ALGORITHMS = [
-        'argon2id' => \PASSWORD_ARGON2ID,
-        'bcrypt'   => \PASSWORD_BCRYPT,
-    ];
+    /** Recognised values of `security.password_algo`. */
+    private const PASSWORD_ALGORITHMS = ['argon2id', 'bcrypt'];
+
+    /**
+     * The algorithm actually used. Argon2id is preferred, but some shared
+     * hosts build PHP without Argon2 support; there is no point making the
+     * whole application unbootable for that. Falling back to bcrypt is
+     * recorded in `user_credentials.algo`, so hashes stay self-describing.
+     */
+    private readonly string $effectivePasswordAlgo;
+
+    /** A `PASSWORD_*` constant (a string on PHP 8.3). */
+    private readonly string $passwordAlgorithm;
 
     public function __construct(
         private readonly UserRepository $users,
@@ -41,20 +49,27 @@ final class AuthService implements AuthServiceInterface
         private readonly ClockInterface $clock,
         private readonly int $tokenTtlSeconds = 86400,
         private readonly ?AuditRepository $audit = null,
-        private readonly string $passwordAlgo = 'argon2id'
+        string $passwordAlgo = 'argon2id'
     ) {
-        if (!isset(self::PASSWORD_ALGORITHMS[$this->passwordAlgo])) {
+        if (!in_array($passwordAlgo, self::PASSWORD_ALGORITHMS, true)) {
             throw new \CasinoEngine\Core\Exception\ConfigurationException(
-                "Unknown password algorithm '{$this->passwordAlgo}'; expected one of "
-                . implode(', ', array_keys(self::PASSWORD_ALGORITHMS)) . '.'
+                "Unknown password algorithm '{$passwordAlgo}'; expected one of "
+                . implode(', ', self::PASSWORD_ALGORITHMS) . '.'
             );
         }
+
+        if ($passwordAlgo === 'argon2id' && !defined('PASSWORD_ARGON2ID')) {
+            $passwordAlgo = 'bcrypt';
+        }
+
+        $this->effectivePasswordAlgo = $passwordAlgo;
+        $this->passwordAlgorithm = $passwordAlgo === 'argon2id' ? \PASSWORD_ARGON2ID : \PASSWORD_BCRYPT;
     }
 
-    /** The algorithm name, as stored in `user_credentials.algo`. */
+    /** The algorithm name actually used, as stored in `user_credentials.algo`. */
     public function passwordAlgo(): string
     {
-        return $this->passwordAlgo;
+        return $this->effectivePasswordAlgo;
     }
 
     public function login(string $username, string $password, ?string $ipAddress = null): array
@@ -134,7 +149,7 @@ final class AuthService implements AuthServiceInterface
 
     public function hashPassword(string $plaintext): string
     {
-        return password_hash($plaintext, self::PASSWORD_ALGORITHMS[$this->passwordAlgo]);
+        return password_hash($plaintext, $this->passwordAlgorithm);
     }
 
     private function hash(string $token): string

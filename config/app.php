@@ -77,7 +77,9 @@ return [
     ],
 
     'security' => [
-        'password_algo'             => \PASSWORD_ARGON2ID,
+        // Name, not the PHP constant: the service resolves it and falls back
+        // to bcrypt when the host's PHP has no Argon2 support.
+        'password_algo'             => 'argon2id',
         'api_token_ttl_seconds'     => 86400,
         'api_rate_limit_per_minute' => 120,
         'api_max_body_bytes'        => 65536,

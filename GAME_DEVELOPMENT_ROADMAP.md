@@ -5,7 +5,7 @@
 > top of the completed engine (phases 0–14).
 >
 > **Current phase:** see the status board at the bottom of this file.
-> **Last updated:** Phase 22 (Roulette) — table games complete.
+> **Last updated:** Phase 23 audit — all 18 games integrated and verified.
 
 ---
 
@@ -350,7 +350,7 @@ verified, **[O]** observed, **[E]** estimated or **[U]** unverified.
 | 20 | Slot games batch 4 | **Complete** |
 | 21 | Blackjack | **Complete** |
 | 22 | Roulette | **Complete** |
-| 23 | Game integration | Not started |
-| 24 | Frontend | Not started |
-| 25 | Administrator panel frontend | Not started |
+| 23 | Game integration | **Complete** (all 18 games run through `RoundService`) |
+| 24 | Frontend | **Not started** — next |
+| 25 | Administrator panel (backend + frontend) | **Not started** |
 | 26 | Final verification and publication | Not started |

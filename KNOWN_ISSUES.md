@@ -74,9 +74,66 @@ added at the same time.
 
 ---
 
+### KI-8 — The frontend does not exist
+**Severity:** high (scope — a directive deliverable)
+**Affected:** Phase 24
+**Detail:** `public/` contains only `index.php` (the API front controller) and
+`.htaccess`. There is no lobby, no game catalog, no slot interface, no blackjack
+interface, no roulette interface, no CSS and no JavaScript. Every game is
+reachable only by calling the JSON API directly.
+**Impact:** The directive's frontend requirements and their acceptance criteria
+are unmet. This is the largest outstanding item.
+**Mitigation:** Next phase. The API is complete and stable, so the frontend has
+a finished contract to build against.
+
+### KI-9 — The administrator panel is backend-only and unreachable
+**Severity:** high (scope — a directive deliverable)
+**Affected:** Phase 25
+**Detail:** `ProbabilityProfile`, `ProbabilityConfigService`,
+`WinFrequencyGovernor` and `ProbabilityRepository` exist, and the migrations
+`2026_01_02_000001_create_probability_tables.sql` and
+`2026_01_02_000002_add_admin_role.sql` create the storage. What does **not**
+exist: administrator authentication, an admin-authorisation middleware, admin
+routes, admin controllers, a simulation-verification endpoint and the entire
+admin frontend. `users.role` is written by the migration and read by **no code**,
+so there is currently no way for any request to be recognised as an
+administrator's.
+**Impact:** The directive's mandatory administrator functionality and its
+additional acceptance criteria are unmet. The probability service cannot be
+reached by an administrator, so the engine currently always uses its default
+behaviour.
+**Mitigation:** Next phase after the frontend. The service layer and its storage
+are done and unit-tested; what remains is authorisation, transport and UI.
+
+### KI-10 — Game mechanics are independent implementations, not replicas
+**Severity:** informative (documentation honesty)
+**Affected:** all 16 slots
+**Detail:** Exact proprietary reel strips, symbol weights, paytables, bonus
+mathematics and artwork were not obtained. Each slot is an independent
+implementation informed by the public research recorded in `RESEARCH_NOTES.md`,
+and each specification states which parts are verified, observed, estimated or
+unverified.
+**Impact:** The engine cannot and does not claim mathematical equivalence with
+any commercial title, and it does not claim to be an exact recreation.
+**Mitigation:** None needed for correctness. The claim is simply never made.
+
+---
+
 ## Resolved
 
-_None yet._
+### KI-11 — Payout multipliers overflowed `INT UNSIGNED` (resolved)
+**Found:** Phase 23 integration audit.
+**Detail:** The slot framework stores payout multipliers as exact rationals. On
+ways and cluster games the denominators legitimately exceed 4,294,967,295, so
+the round's `INSERT` failed with `SQLSTATE[22003]` and the entire round rolled
+back — a big win surfaced to the player as a 500 rather than a payout.
+**Fix:** `database/migrations/2026_01_02_000003_widen_multiplier_columns.sql`
+widens `game_rounds.payout_multiplier_num`, `game_rounds.payout_multiplier_den`,
+`payouts.multiplier_num` and `payouts.multiplier_den` to `BIGINT UNSIGNED`. No
+engine or game logic changed.
+**Regression test:**
+`tests/Integration/AllGamesIntegrationTest::testEveryGameOpensASessionAndRunsARoundThatMovesTheWallet`
+now plays a real round of each of the eighteen games through `RoundService`.
 
 ---
 

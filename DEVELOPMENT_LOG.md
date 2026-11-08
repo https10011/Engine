@@ -476,3 +476,83 @@ composer cs                               =>  Clean
   bet across two spins. La partage is exact.
 * The American five-number bet is supported by the framework but the default
   table configuration is European.
+
+---
+
+## Phase 23 — Game integration
+
+**Date:** 2026-11-08
+**Status:** Complete
+
+### Announcement
+
+* Phase: 23. Objective: prove that all eighteen games work through the same
+  `RoundService` the API uses — not merely that each game passes its own unit
+  test when driven directly.
+* Deliverables: `tests/Integration/AllGamesIntegrationTest.php`.
+* Acceptance criteria: every one of the eighteen registers, opens a session,
+  runs a round, moves the wallet by exactly the wager and the payout, records
+  history, rejects a below-minimum bet without touching the wallet, and shares
+  no state with another game or another session.
+
+### Implementation
+
+`tests/Integration/AllGamesIntegrationTest.php` — 7 tests, 239 assertions. Each
+game is driven through its own `SimulationStrategyInterface` where it has one,
+because that is the game itself telling the harness how its round is built;
+otherwise the harness falls back to the category's opening action.
+
+Tests:
+
+1. All eighteen target ids are registered.
+2. Every game publishes metadata the API can serve (id, name, provider, sane
+   bet limits, a positive max-win multiplier).
+3. Every game runs a round that moves the wallet by exactly the wager and the
+   payout.
+4. Every game writes a settled round to the history.
+5. A round of one game leaves another game's session byte-for-byte unchanged.
+6. Two sessions of the same game keep independent round counts.
+7. Every game rejects a below-minimum bet and leaves the wallet untouched.
+
+### Defect found and fixed — payout multipliers overflowed `INT UNSIGNED`
+
+This is the defect the whole phase exists to catch, and it is a real one.
+
+The slot framework keeps payout multipliers as **exact rationals** so a win is
+`numerator / denominator` with no float rounding. The denominators come from the
+ways and cluster evaluations and legitimately reach `2.5e9` and beyond; a
+`BIGINT`-scale payout then multiplies that again. `game_rounds.payout_multiplier_den`
+and `payouts.multiplier_den` were `INT UNSIGNED`, which tops out at 4,294,967,295.
+
+Result: the first large win on a ways game failed the round's `INSERT` with
+`SQLSTATE[22003] Out of range value for column 'payout_multiplier_den'`, and the
+whole round rolled back — a losing round looked fine, a big winning round threw
+a 500.
+
+Why no earlier test caught it: the sixteen slot unit tests assert against the
+returned `Ratio` and never persist a round, and the pre-existing integration
+tests only ever play the synthetic fixtures, whose multipliers are small.
+
+Fix: `database/migrations/2026_01_02_000003_widen_multiplier_columns.sql` widens
+`game_rounds.payout_multiplier_num`, `game_rounds.payout_multiplier_den`,
+`payouts.multiplier_num` and `payouts.multiplier_den` to `BIGINT UNSIGNED`. No
+engine logic and no game mathematics changed; the stored value is the same
+rational it always was, it simply fits now.
+
+### Verification
+
+```
+vendor/bin/phpunit --filter AllGamesIntegrationTest  =>  7 tests, 239 assertions OK
+composer check => lint OK, PHPStan OK, 235 tests / 22534 assertions OK
+```
+
+### Remaining work after this phase
+
+* Phase 24 — frontend (lobby, catalog, sixteen slot interfaces, blackjack,
+  roulette).
+* Phase 25 — administrator panel: backend service exists
+  (`src/Services/Probability/`, `ProbabilityRepository`, migrations
+  `2026_01_02_000001` and `2026_01_02_000002`), but **there is no admin
+  authentication wiring, no admin routes, no admin controllers and no admin
+  frontend**. The `users.role` column exists and is unused by any code.
+* Phase 26 — final verification and publication.

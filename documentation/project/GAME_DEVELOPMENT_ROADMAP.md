@@ -52,7 +52,7 @@ games, the frontend and the administrator probability panel.
   spins with retrigger, ragged grids, per-reel heights.
 * Identified missing capabilities (below) and the games that need them.
 * Wrote `GAME_DEVELOPMENT_ROADMAP.md` (this file).
-* Wrote 18 individual game specifications under `docs/games/`.
+* Wrote 18 individual game specifications under `documentation/backend/games/`.
 * Established per-game and global acceptance criteria (§5, §6).
 
 **Missing capabilities identified by the audit:**
@@ -264,7 +264,7 @@ src/Games/Roulette/                  roulette module
 src/Api/Controller/Admin*            admin controllers
 public/                              frontend: lobby, game pages, admin pages,
                                      css/, js/, assets/
-docs/games/                          one specification per game
+documentation/backend/games/        one specification per game
 ```
 
 ---
@@ -299,7 +299,7 @@ Statistical tests are diagnostics, never substitutes for verifying the rules.
 - [ ] Own state extensions where the mechanic needs persistence.
 - [ ] Own unit tests covering the winning path, the losing path and each special
       mechanic, plus state round-trip and configuration rejection.
-- [ ] Own specification document under `docs/games/`.
+- [ ] Own specification document under `documentation/backend/games/`.
 - [ ] Integration coverage through `RoundService`.
 
 ### Global

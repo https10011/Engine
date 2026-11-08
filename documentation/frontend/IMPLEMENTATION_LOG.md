@@ -69,7 +69,7 @@ system fonts, which crashed Chromium's renderer on the lobby; installing DejaVu/
 and a local `fontconfig` fixed the harness (not an application bug).
 
 Real defects found and fixed during this phase (details in
-[FRONTEND_TEST_REPORT.md](FRONTEND_TEST_REPORT.md)):
+[FRONTEND_TEST_REPORT.md](../reports/FRONTEND_TEST_REPORT.md)):
 
 * delegated submit handler used `currentTarget` instead of the form;
 * HTML `pattern` with an unescaped hyphen rejected by the `v` flag;
@@ -92,7 +92,7 @@ settled. Screenshots in `artifacts/verification/`.
 * Inventory, asset mapping, reference analysis, security audit, gap analysis,
   architecture, design system, component catalogue, game interfaces, missing assets,
   test report, this log and the final report under `documentation/frontend/`.
-* `README.md` gained a player-frontend section; `API_SPECIFICATION.md` documents
+* `README.md` gained a player-frontend section; [API_SPECIFICATION.md](../backend/API_SPECIFICATION.md) documents
   registration.
 
 ## Commit record

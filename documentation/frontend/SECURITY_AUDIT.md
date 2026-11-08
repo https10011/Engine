@@ -115,6 +115,6 @@ engine.
 * The reference bundles are minified; a full deobfuscation was out of scope and would
   not change the decision not to reuse them.
 * No penetration test or fuzzing was performed. The engine's own API tests and
-  `SECURITY_AUDIT.md` at the repository root cover server-side concerns.
+  [the backend security audit](../backend/SECURITY_AUDIT.md) cover server-side concerns.
 * CSP `style-src 'self'` permits CSSOM writes (`element.style`) but not `<style>`
   injection; the frontend uses CSSOM only for the roulette wheel and theme variables.

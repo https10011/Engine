@@ -2,7 +2,7 @@
 
 > Phase 12 deliverable. A systematic review of the engine's security and
 > transaction-integrity surfaces, the defects it found, and the fixes. Findings
-> that were intentionally left open are in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+> that were intentionally left open are in [KNOWN_ISSUES.md](../project/KNOWN_ISSUES.md).
 
 Audit date: 2026-11-07. Engine version 1.0.0.
 
@@ -210,4 +210,4 @@ the audit confirmed it is enforced on the settling path.
 
 No critical findings remain open. Residual limitations — chiefly that no
 independent penetration test or third-party security review has been
-performed — are recorded in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+performed — are recorded in [KNOWN_ISSUES.md](../project/KNOWN_ISSUES.md).

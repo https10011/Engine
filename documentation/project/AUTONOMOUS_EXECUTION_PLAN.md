@@ -74,7 +74,7 @@ Five areas, in dependency order:
 +-------------------------------------------------------------+
 ```
 
-Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
+Full detail in [ARCHITECTURE.md](../backend/ARCHITECTURE.md).
 
 Key boundaries:
 

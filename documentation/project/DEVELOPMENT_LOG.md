@@ -693,3 +693,79 @@ php -l (src + tests)                    =>  no syntax errors
 vendor/bin/phpcs --standard=phpcs.xml.dist  =>  0 errors
 vendor/bin/phpstan analyse              =>  No errors
 ```
+
+---
+
+# Phase 27 — Player frontend, audit and shared-hosting package (2026-11-08)
+
+> This entry is current. Paths in earlier entries refer to the repository
+> layout at the time; all documentation is now indexed in
+> [documentation/README.md](../README.md).
+
+### Scope
+
+Build the player-facing frontend requested for the supplied reference site,
+without changing game mechanics, then audit the whole repository and package a
+self-contained deployable application.
+
+### Delivered
+
+* **AURUM frontend** (`public/app.html`, `public/assets/`) — mobile-first lobby,
+  generated brand/game artwork, carousel, category filters, search, recent
+  games, login/registration, account drawer, history and four real game
+  interfaces covering all 22 registered modules. No third-party provider or
+  tenant art is shipped; no deposit/payment UI exists.
+* **Additive API** — `POST /api/v1/auth/register` with transaction, validation,
+  configurable starting credits and an off switch; three tests.
+* **Production bundle** — `htdocs/` assembled by `tools/build_htdocs.php`:
+  front controller, SPA, assets, `src/`, config, migrations, `install.sql`,
+  CLI, runtime `vendor/` (`--no-dev`) and per-directory deny rules.
+* **Documentation** reorganized into `backend/`, `frontend/`, `deployment/`,
+  `project/` and `reports/`; root report added.
+* **Verification tooling** — source inventory, asset generator, mobile and
+  desktop Playwright checks.
+
+### Defects found and fixed
+
+* Delegated form handler read `event.currentTarget` (the document) instead of
+  the form; login and registration did nothing.
+* Invalid HTML `pattern` under the `v` flag (unescaped hyphen).
+* CSS custom properties assigned via `Object.assign` never applied; the
+  roulette wheel had no pockets.
+* History view expected money objects but the API returned flat minor units;
+  every amount rendered as 0.00.
+* Roulette history strip was not repainted after a spin.
+* Coin backface appeared mirrored because a CSS `filter` flattened
+  `preserve-3d`.
+* Slot/roulette header flex wrapping, emoji tofu, provider truncation, chip text
+  overflow, duplicate search close button.
+* **Production boot bug:** `htdocs/index.php` resolved its root to the enclosing
+  repository because the parent contained `vendor/`, so the production tree read
+  the development `.env`. Fixed by detecting the self-contained layout from its
+  own `src/` and `config/`.
+* **Shared-hosting compatibility:** `PASSWORD_ARGON2ID` was a hard boot
+  dependency and the config default was an integer constant. Now the name is
+  resolved at runtime with a bcrypt fallback.
+
+### Verification
+
+```
+composer check                          =>  277 tests, 22791 assertions OK
+PHPStan (260 files)                     =>  No errors
+php -l over htdocs/                     =>  no syntax errors
+fresh DB + htdocs/database/install.sql  =>  19 tables, 5 migrations, no drift
+mobile Chromium 390x844 (htdocs)        =>  lobby/login/spin/deal/flip/search, 0 errors
+desktop Chromium 1440x900 (htdocs)      =>  6 columns, no overflow, 0 errors
+htdocs copy served from /tmp            =>  HTML/API 200, private paths 404
+```
+
+Real rounds were written to the production database (four game ids, five
+rounds) through the production entry point. `htdocs/.env` was generated only
+locally and is gitignored.
+
+### Limitations
+
+Chromium only; no Apache/LiteSpeed execution of `.htaccess`; no live shared
+host; no email/verification; generated placeholder game art; 18 target game
+specs but no specs for the four examples. Full list in
+[KNOWN_ISSUES.md](KNOWN_ISSUES.md).

@@ -106,9 +106,68 @@ unverified.
 any commercial title, and it does not claim to be an exact recreation.
 **Mitigation:** None needed for correctness. The claim is simply never made.
 
+### KI-15 — Frontend browser coverage is Chromium-only
+**Severity:** low (assurance)
+**Detail:** The mobile and desktop verification used headless Chromium 131.
+Safari/iOS WebKit, Firefox, real devices and screen readers were not available.
+**Impact:** A browser-specific CSS or `<dialog>` issue could remain.
+**Mitigation:** The interface uses widely supported platform features and was
+checked at two viewports with no console errors; a cross-browser pass is
+recommended before a public launch.
+
+### KI-16 — Game tiles are generated approximations, not licensed artwork
+**Severity:** low (visual)
+**Detail:** The 22 tiles are original SVGs generated from engine theme metadata
+and labelled `ENGINE APPROXIMATION`. Licensed provider art can replace them at
+the paths listed in `MISSING_GAME_ASSETS.md`.
+**Impact:** The lobby does not visually match the commercial titles it names.
+
+### KI-17 — No provider filter in the lobby
+**Severity:** low (feature)
+**Detail:** Categories, search (which includes provider names) and shelves are
+implemented; there is no separate provider dropdown. The engine exposes only
+six provider strings, so the filter was not considered useful enough to add.
+
+### KI-18 — No email verification, password reset or CAPTCHA
+**Severity:** medium for a public launch (low for a private simulation)
+**Detail:** Registration creates an account immediately. "Forgot password?"
+opens an explanatory dialog; there is no reset email because the application
+sends no email. Login and registration are rate-limited, not CAPTCHA-gated.
+**Mitigation:** Close public registration with `ALLOW_SELF_REGISTRATION=false`,
+or add email/invite verification before exposing the site publicly.
+
+### KI-19 — The production bundle was not run under Apache
+**Severity:** medium (deployment assurance)
+**Detail:** `htdocs/` was exercised through PHP's built-in server with its
+production front controller, and every private path was probed. The shipped
+`.htaccess` rewrite and deny rules follow standard Apache 2.4 directives but
+were not executed by Apache/LiteSpeed in this environment.
+**Mitigation:** Confirm `mod_rewrite`/`AllowOverride` and probe the URLs in
+the deployment security checklist after upload.
+
 ---
 
 ## Resolved
+
+### KI-21 — Front controller read the development `.env` from `htdocs/`
+**Found:** deployment test, 2026-11-08, when production registrations did not
+appear in the production database.
+**Detail:** Root detection checked for a vendor directory in the parent, which
+is true for `htdocs/` inside the repository. The production tree therefore
+resolved its root to the repository and loaded the development configuration.
+**Fix:** The front controller now detects the self-contained layout by its own
+`src/` and `config/` directories. Re-verified against a fresh production
+database: registrations, login and rounds land in the htdocs schema.
+
+### KI-20 — Argon2id was a hard boot dependency
+**Found:** deployment compatibility audit, 2026-11-08.
+**Detail:** The config default and a class-constant map referenced
+`PASSWORD_ARGON2ID` directly. On a PHP build without Argon2 — common on shared
+hosting — loading `AuthService` would be fatal, and the default integer value
+was also cast to the invalid name `"2"` when no `.env` was present.
+**Fix:** The config default is now the name `argon2id`; `AuthService` resolves
+the algorithm at runtime, falls back to bcrypt when Argon2 is unavailable, and
+records the algorithm actually used. Both paths were tested against `htdocs/`.
 
 ### KI-14 — "RTP 95% interval" was centred on the wrong estimator (resolved)
 **Found:** Phase 26 verification, 2026-11-08, by running the administrator's

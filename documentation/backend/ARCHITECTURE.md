@@ -227,7 +227,7 @@ storage/logs/ storage/cache/               ← writable at runtime
 ```
 
 Shared-hosting consequences, documented in
-[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md):
+[DEPLOYMENT_GUIDE.md](../deployment/SHARED_HOSTING_DEPLOYMENT.md):
 
 * No persistent processes: everything is request-scoped.
 * No WebSockets: the frontend polls or posts.

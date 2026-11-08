@@ -210,4 +210,4 @@ The transaction and locking behaviour is verified by
 
 All four are meant to be wired to cron; none is required for correctness. Each
 reads its window from configuration, which is overridable by environment
-variable (see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)).
+variable (see [DEPLOYMENT_GUIDE.md](../deployment/SHARED_HOSTING_DEPLOYMENT.md)).

@@ -4,7 +4,7 @@
 > module. The worked example is `src/Games/Synthetic/SyntheticSlotGame.php`.
 
 The framework exists because the 16 target slot titles do **not** share one
-mathematical structure. Research into them (see [RESEARCH_NOTES.md](RESEARCH_NOTES.md))
+mathematical structure. Research into them (see [RESEARCH_NOTES.md](../project/RESEARCH_NOTES.md))
 found four different win-evaluation models, several multiplier lifetimes,
 mid-spin grid changes, and multiple symbol-transformation rules. A single rigid
 "spin three reels and count cherries" class could not host them, so the

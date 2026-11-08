@@ -6,6 +6,28 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — AURUM player frontend and shared-hosting bundle (2026-11-08)
+- `public/app.html`, `public/assets/{css,js,games,banners,brand}` — a complete
+  mobile-first player interface: catalogue lobby, carousel, category filters,
+  search, login/registration, slot, blackjack, roulette and coin-flip views,
+  history and an administrator probability panel. All outcomes come from the
+  API; the client computes nothing.
+- `POST /api/v1/auth/register` — additive self-service registration with a
+  configurable virtual-credit starting balance and an off switch.
+- `htdocs/` — self-contained production application for PHP/MySQL shared
+  hosting, with `database/install.sql`, runtime Composer autoloader, deny rules
+  and an operator README. Built by `tools/build_htdocs.php`.
+- `documentation/` reorganized into backend, frontend, deployment, project and
+  reports; `FINISHED_ANALYSIS_REPORT.md` added at the root.
+- `tools/build_htdocs.php`, mobile/desktop Playwright checks, source inventory
+  and asset generators.
+
+### Fixed — production compatibility (2026-11-08)
+- Argon2id is no longer a hard boot dependency: the configured algorithm is
+  resolved at runtime and falls back to bcrypt, recording the algorithm used.
+- The front controller distinguishes the `public/` development layout from the
+  self-contained `htdocs/` layout instead of resolving to a parent repository.
+
 ### Added — jackpot configuration and settlement (2026-11-08)
 - `SpinResult::hasJackpot()` / `jackpotTier()` — a jackpot is now distinguishable
   from an ordinary win by reading the round's feature transitions.
@@ -18,7 +40,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
   and exposes per-feature rates; the simulation report and
   `AdminController::compare()` now report the observed jackpot rate against the
   configured probability.
-- `docs/ADMIN_PANEL.md` — the jackpot lifecycle, the corrected data model and the
+- `documentation/backend/ADMIN_PANEL.md` — the jackpot lifecycle, the corrected data model and the
   governor's jackpot exemption are documented.
 
 ### Fixed — jackpot probability was deflatable (2026-11-08)

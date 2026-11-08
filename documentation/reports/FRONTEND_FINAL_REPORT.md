@@ -107,27 +107,27 @@ as requested).
   state.
 * The 22 tiles are generated placeholders labelled `ENGINE APPROXIMATION`; licensed
   provider artwork can replace them at the documented paths
-  ([MISSING_GAME_ASSETS.md](MISSING_GAME_ASSETS.md)).
+  ([MISSING_GAME_ASSETS.md](../frontend/MISSING_GAME_ASSETS.md)).
 * The administrator panel was not re-exercised in this browser run.
 * Self-service registration has no email verification or CAPTCHA. Suitable for a
   virtual-credit simulation; a public launch should add verification or an invite code.
 * The reference site's provider game clients, real-money flows, 49-game catalogue,
   localization and member-centre features are not reproduced. They are documented in
-  [RESOURCE_GAP_ANALYSIS.md](RESOURCE_GAP_ANALYSIS.md).
+  [RESOURCE_GAP_ANALYSIS.md](../frontend/RESOURCE_GAP_ANALYSIS.md).
 
 ## 9. Documentation index
 
 | Document | Contents |
 | --- | --- |
-| [AH77_SOURCE_INVENTORY.md](AH77_SOURCE_INVENTORY.md) | every supplied file, hash, size, type |
-| [REFERENCE_WEBSITE_ANALYSIS.md](REFERENCE_WEBSITE_ANALYSIS.md) | what the reference is, what was reused and rejected |
-| [ASSET_MAPPING.md](ASSET_MAPPING.md) | reference asset groups → AURUM assets, generation |
-| [SECURITY_AUDIT.md](SECURITY_AUDIT.md) | reference findings, AURUM controls, registration risks |
-| [RESOURCE_GAP_ANALYSIS.md](RESOURCE_GAP_ANALYSIS.md) | 22 registered games and reference gaps |
-| [FRONTEND_ARCHITECTURE.md](FRONTEND_ARCHITECTURE.md) | modules, router, data flow, backend delta |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | tokens, type, components, motion, accessibility |
-| [COMPONENT_CATALOG.md](COMPONENT_CATALOG.md) | every component and state |
-| [GAME_INTERFACE_IMPLEMENTATION.md](GAME_INTERFACE_IMPLEMENTATION.md) | the four interfaces and all 22 modules |
-| [MISSING_GAME_ASSETS.md](MISSING_GAME_ASSETS.md) | placeholders and replacement paths |
+| [AH77_SOURCE_INVENTORY.md](../frontend/AH77_SOURCE_INVENTORY.md) | every supplied file, hash, size, type |
+| [REFERENCE_WEBSITE_ANALYSIS.md](../frontend/REFERENCE_WEBSITE_ANALYSIS.md) | what the reference is, what was reused and rejected |
+| [ASSET_MAPPING.md](../frontend/ASSET_MAPPING.md) | reference asset groups → AURUM assets, generation |
+| [SECURITY_AUDIT.md](../frontend/SECURITY_AUDIT.md) | reference findings, AURUM controls, registration risks |
+| [RESOURCE_GAP_ANALYSIS.md](../frontend/RESOURCE_GAP_ANALYSIS.md) | 22 registered games and reference gaps |
+| [FRONTEND_ARCHITECTURE.md](../frontend/FRONTEND_ARCHITECTURE.md) | modules, router, data flow, backend delta |
+| [DESIGN_SYSTEM.md](../frontend/DESIGN_SYSTEM.md) | tokens, type, components, motion, accessibility |
+| [COMPONENT_CATALOG.md](../frontend/COMPONENT_CATALOG.md) | every component and state |
+| [GAME_INTERFACE_IMPLEMENTATION.md](../frontend/GAME_INTERFACE_IMPLEMENTATION.md) | the four interfaces and all 22 modules |
+| [MISSING_GAME_ASSETS.md](../frontend/MISSING_GAME_ASSETS.md) | placeholders and replacement paths |
 | [FRONTEND_TEST_REPORT.md](FRONTEND_TEST_REPORT.md) | commands, results, defects, limitations |
-| [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md) | phases and decisions |
+| [IMPLEMENTATION_LOG.md](../frontend/IMPLEMENTATION_LOG.md) | phases and decisions |

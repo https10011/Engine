@@ -134,7 +134,7 @@ POST /api/v1/auth/register
 It reuses `UserRepository`, `WalletRepository`, `AuthService::hashPassword()` and
 `issueToken()` in a transaction, and is gated by `security.allow_self_registration`.
 No existing route, controller, service, game registration or test was removed or
-changed. See `API_SPECIFICATION.md` §2 and `tests/Api/ApiTest.php`.
+changed. See [API_SPECIFICATION.md](../backend/API_SPECIFICATION.md) §2 and `tests/Api/ApiTest.php`.
 
 ## 7. Serving
 

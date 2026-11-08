@@ -18,6 +18,8 @@ php bin/console user:create --username=<n> --password=<p> --balance=100000
 php bin/console user:admin --username=<n>     # grant/revoke admin role
 php bin/console serve                         # dev HTTP server (development only)
 php bin/engine-simulate sim:run --game=<id> --rounds=N --seed=S
+
+PATH="$HOME/bin:$PATH" php tools/build_htdocs.php   # rebuild the deployable htdocs/ tree
 ```
 
 ## Non-negotiable invariants
@@ -29,27 +31,32 @@ php bin/engine-simulate sim:run --game=<id> --rounds=N --seed=S
 * Randomness comes only from `$context->rng()`. Never `rand()`/`mt_rand()`.
 * Repositories are the only classes that write SQL.
 * The 168 pre-existing engine tests must keep passing; the suite currently
-  holds 274 tests.
+  holds 277 tests (22,791 assertions).
+* `htdocs/` is generated. Change the source tree and rebuild; never hand-edit
+  the production bundle.
 
 ## Where things live
 
 | Path | What |
 | --- | --- |
 | `src/Core/` | bootstrap, registry, discovery, runtime, lifecycle, contracts |
-| `src/Framework/Slot/`, `Card/`, `Roulette/` | the three game frameworks |
-| `src/Games/` | the 18 target games (16 slots + blackjack + roulette) |
+| `src/Frameworks/Slot/`, `Card/`, `Roulette/` | the three game frameworks |
+| `src/Games/` | 18 target modules (16 slots + blackjack + roulette) plus CoinFlip and Synthetic fixtures — 22 registered |
 | `src/Probability/` | the global/per-game odds governor and profiles |
 | `src/Simulation/` | streaming statistics and the simulation driver |
 | `src/Api/` | HTTP controllers and routing |
-| `public/` | the player frontend (`app.html`, `assets/`) and `/admin` panel |
-| `docs/games/` | one specification per game (18 files) |
-| `tests/Integration/AllGamesIntegrationTest.php` | asserts all 18 games run end to end |
+| `public/` | development document root: player frontend (`app.html`, `assets/`), `/admin` route |
+| `htdocs/` | generated, self-contained production tree for shared hosting |
+| `documentation/backend/games/` | one specification per target game (18 files) |
+| `tests/Integration/AllGamesIntegrationTest.php` | asserts the 18 target games run end to end |
 
 ## Documentation to keep current
 
-`GAME_DEVELOPMENT_ROADMAP.md` (phase board), `DEVELOPMENT_LOG.md` (chronology),
-`PROJECT_STATUS.md` (single-page truth + publication record), `KNOWN_ISSUES.md`
-(open items under `## Open`, fixed ones under `## Resolved`).
+All documentation lives under `documentation/` (index: `documentation/README.md`).
+`project/GAME_DEVELOPMENT_ROADMAP.md` (phase board), `project/DEVELOPMENT_LOG.md`
+(chronology), `project/PROJECT_STATUS.md` (single-page truth + publication record),
+`project/KNOWN_ISSUES.md` (open items under `## Open`, fixed ones under `## Resolved`),
+and the root `FINISHED_ANALYSIS_REPORT.md`.
 
 ## Gotchas
 

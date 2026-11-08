@@ -273,7 +273,7 @@ Unauthenticated, and useful as an uptime probe.
 * **Error hygiene** — a 500 never returns a stack trace, a SQL fragment or a
   file path; the detail goes to the log and the client gets a generic message.
 * **CSRF** — not applicable to bearer-token auth; recorded as a condition to
-  revisit if cookie auth is ever added (see [KNOWN_ISSUES.md](KNOWN_ISSUES.md)).
+  revisit if cookie auth is ever added (see [KNOWN_ISSUES.md](../project/KNOWN_ISSUES.md)).
 
 ---
 
@@ -290,4 +290,4 @@ curl -s -X POST http://localhost:8000/api/v1/auth/login \
 ```
 
 Deployment and the production document-root arrangement are in
-[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
+[DEPLOYMENT_GUIDE.md](../deployment/SHARED_HOSTING_DEPLOYMENT.md).

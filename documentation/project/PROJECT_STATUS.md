@@ -1,25 +1,31 @@
 # Project Status
 
 > Single-page truth about where the project stands.
-> Last updated: Phase 26 — final verification, two defects fixed and published.
+> Last updated: 2026-11-08 — frontend completion, project audit and shared-hosting package.
 
 ---
 
 ## Current phase
 
-**Engine phases 0–14 complete and published. Directive phases 15–26 complete.**
+**Engine, 22 registered games, player frontend, administrator panel and the
+shared-hosting deployment bundle are complete.**
 
-All eighteen target games (16 slots, blackjack, roulette) are implemented,
-registered and verified end to end through `RoundService`. The player frontend
-(`public/app.html` plus `public/assets/`) and the administrator panel
-(`/admin`) are implemented and reachable; the jackpot mechanic is settled into
-payouts and recorded for the admin jackpot history. See the phase board below
-and `GAME_DEVELOPMENT_ROADMAP.md`.
+The 18 target games (16 slots, blackjack, roulette) are implemented and verified
+end to end through `RoundService`; four engine examples (`coinflip.heads-tails`,
+`synthetic.slot3x3`, `synthetic.blackjack`, `synthetic.roulette`) bring the live
+catalogue to **22 modules**. The AURUM player interface covers every module with
+four real interface types, and the administrator probability panel is reachable
+for admin accounts.
 
-Phase 26 verification is complete: 274 tests pass, PHP syntax, PHPCS and
-PHPStan are clean, and two defects found during the acceptance pass (KI-13,
-KI-14) are fixed and covered. The remaining step is the final push and remote
-confirmation.
+Phase 26 verification was **274 tests / 22,777 assertions**. The frontend phase
+added three registration tests and is now **277 tests / 22,791 assertions**, with
+PHP lint and PHPStan clean. A self-contained `htdocs/` tree was assembled from
+the same sources, imported into a fresh database and exercised through its
+production entry point; see the root `FINISHED_ANALYSIS_REPORT.md`.
+
+Current deployment target: conventional PHP 8.3 / MySQL shared hosting. Use
+`documentation/deployment/SHARED_HOSTING_DEPLOYMENT.md`, not the old web-root
+layout notes in the historical sections below.
 
 ---
 
@@ -27,16 +33,17 @@ confirmation.
 
 | Component | Version | Command used |
 | --- | --- | --- |
-| PHP CLI | 8.4.27 | `php -v` |
-| PHP extensions | pdo_mysql, mysqli, mbstring, json, curl, intl, xml, zip, openssl | `php -m` |
-| MySQL-compatible server | MariaDB 11.8.6 | `mysql --version` |
+| PHP CLI | 8.3.32 | `php -v` |
+| PHP extensions | pdo_mysql, mbstring, json, openssl, argon2 | `php -m` |
+| MySQL-compatible server | MariaDB 10.11 (port 3307 in this container) | `mariadbd --version` |
 | Composer | 2.11.1 | `composer --version` |
-| Databases created | `casino_engine`, `casino_engine_test` | `CREATE DATABASE` |
-| Application DB user | `engine@localhost` / `engine@127.0.0.1` | `GRANT` |
+| Databases created | `casino_engine`, `casino_engine_test`, `casino_engine_htdocs` | `CREATE DATABASE` |
+| Application DB user | `engine@127.0.0.1` | `GRANT` |
 
 Code is written for PHP 8.3+ (`composer.json` requires `>=8.3`); this container
-runs 8.4.27. The dev container is Debian 13 (trixie). Production target is
-conventional PHP/MySQL shared hosting; see `DEPLOYMENT_GUIDE.md`.
+runs 8.3.32. The frontend was verified with Chromium 131 via Playwright.
+Production target is conventional PHP/MySQL shared hosting; see
+[SHARED_HOSTING_DEPLOYMENT.md](../deployment/SHARED_HOSTING_DEPLOYMENT.md).
 
 ---
 
@@ -72,7 +79,9 @@ conventional PHP/MySQL shared hosting; see `DEPLOYMENT_GUIDE.md`.
 | 11 | Simulation and mathematical testing | **Complete** |
 | 12 | Security, reliability and performance audit | **Complete** (`SECURITY_AUDIT.md`) |
 | 13 | Documentation and developer experience | **Complete** |
-| 14 | Final verification and completion | **Complete** (publication pending) |
+| 14 | Final verification and completion | **Complete** (published) |
+| 15–26 | Target games, jackpot, admin panel, publication | **Complete** (see below) |
+| 27 | Player frontend, audit and shared-hosting package | **Complete** (`htdocs/`, root report) |
 
 ---
 
@@ -95,7 +104,7 @@ Documentation (all present and non-empty):
 | `DATABASE_SCHEMA.md` | Tables, keys, indexes, migrations |
 | `API_SPECIFICATION.md` | Endpoints, payloads, errors |
 | `TESTING_STRATEGY.md` | Test layers and how to run them |
-| `DEPLOYMENT_GUIDE.md` | Shared-hosting deployment |
+| `documentation/deployment/SHARED_HOSTING_DEPLOYMENT.md` | Shared-hosting deployment |
 | `SECURITY_AUDIT.md` | Audit findings and fixes |
 | `RESEARCH_NOTES.md` | Game mechanics research with evidence tags |
 | `KNOWN_ISSUES.md` | Honest limitation list |
@@ -186,7 +195,7 @@ plan and status board.
 
 | Phase | Deliverable | Status |
 | --- | --- | --- |
-| 15 | Repository audit, roadmap, 18 individual game specifications | **Complete** (`docs/games/`, `GAME_DEVELOPMENT_ROADMAP.md`) |
+| 15 | Repository audit, roadmap, 18 individual game specifications | **Complete** (`documentation/backend/games/`, `GAME_DEVELOPMENT_ROADMAP.md`) |
 | 16 | Shared infrastructure extensions (probability service, slot features, admin role migration) | **Complete** |
 | 17 | Slots batch 1 — Super Ace, Piñata Wins, Wild Bounty Showdown, Mahjong Hit | **Complete** |
 | 18 | Slots batch 2 — Golden Empire, Sugar Bang Bang 2, Fortune Gems 3, Swerte Fiesta | **Complete** |
@@ -228,7 +237,7 @@ fixtures and one SDK example.
 
 Each slot has its own module, configuration, symbols, strips, paytable,
 evaluator, feature composition, metadata, registration, unit tests and
-specification document under `docs/games/`. Blackjack and roulette are complete
+specification document under `documentation/backend/games/`. Blackjack and roulette are complete
 tables on the card and roulette frameworks.
 
 ### What is implemented

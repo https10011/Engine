@@ -41,10 +41,14 @@ final class SimulationStatistics
 
     private int $maxMultiplierScaled = 0;
 
-    // Welford accumulators, keyed on the per-round return multiplier scaled by
-    // 1e6 so the running mean stays an integer computation.
-    private float $meanReturn = 0.0;
-    private float $m2Return = 0.0;
+    // Streaming sums for the ratio-of-sums RTP and its linearised variance.
+    // The mean of the per-round return *multiple* is not the reported RTP when
+    // stakes differ (a doubled blackjack hand stakes twice as much), so the
+    // interval is built from the ratio itself rather than from an unweighted
+    // mean of multiples.
+    private float $sumWageredSquared = 0.0;
+    private float $sumReturnedSquared = 0.0;
+    private float $sumWageredReturned = 0.0;
 
     /** @var array<string, int> payout multiplier (scaled, 2dp) => count */
     private array $multiplierHistogram = [];
@@ -114,13 +118,12 @@ final class SimulationStatistics
         // contribute nothing to the return distribution.
         if ($wageredMinor > 0) {
             $return = $returnedMinor / $wageredMinor;
-            // Welford's update. The second factor must use the *previous* mean:
-            // squaring the deviation from the new mean understates the
-            // variance, which would make every reported confidence interval
-            // narrower than the sample actually justifies.
-            $previousMean = $this->meanReturn;
-            $this->meanReturn += ($return - $previousMean) / $this->paidRounds;
-            $this->m2Return += ($return - $previousMean) * ($return - $this->meanReturn);
+
+            // Streaming sums for the ratio-of-sums variance. Kept in floats so
+            // a long run cannot overflow an integer accumulator on the squares.
+            $this->sumWageredSquared += $wageredMinor * $wageredMinor;
+            $this->sumReturnedSquared += $returnedMinor * $returnedMinor;
+            $this->sumWageredReturned += $wageredMinor * $returnedMinor;
 
             $bucket = number_format($return, 2, '.', '');
             $this->multiplierHistogram[$bucket] = ($this->multiplierHistogram[$bucket] ?? 0) + 1;
@@ -235,25 +238,49 @@ final class SimulationStatistics
     }
 
     /**
-     * Standard error of the observed per-round return.
+     * Standard error of the observed RTP.
      *
-     * This quantifies how much the observed RTP would move if the run were
-     * repeated; it is the honest way to say "the sample is this noisy". With
-     * fewer than two paid rounds there is nothing to estimate.
+     * The reported RTP is a ratio of sums, `Σreturned / Σwagered`. Its
+     * standard error comes from the delta-method (linearised) variance of that
+     * ratio, which — unlike the standard error of the mean per-round multiple
+     * — stays correct when stakes differ between rounds, as they do when a
+     * blackjack hand is doubled.
+     *
+     * With fewer than two paid rounds there is nothing to estimate.
      */
     public function standardError(): ?float
     {
-        if ($this->paidRounds < 2) {
+        if ($this->paidRounds < 2 || $this->totalWageredMinor === 0) {
             return null;
         }
 
-        $variance = $this->m2Return / ($this->paidRounds - 1);
+        $n = (float) $this->paidRounds;
+        $sumW = (float) $this->totalWageredMinor;
+        $sumR = (float) $this->totalReturnedMinor;
 
-        return sqrt($variance / $this->paidRounds);
+        // Variance of the per-round (wagered, returned) pair, and of the ratio.
+        $varW = ($this->sumWageredSquared - $sumW * $sumW / $n) / ($n - 1);
+        $varR = ($this->sumReturnedSquared - $sumR * $sumR / $n) / ($n - 1);
+        $covWR = ($this->sumWageredReturned - $sumW * $sumR / $n) / ($n - 1);
+
+        $rtp = $sumR / $sumW;
+
+        // Var(R/W) ≈ (Var(R) - 2·RTP·Cov(W,R) + RTP²·Var(W)) / (n · W̄²).
+        $meanW = $sumW / $n;
+        $variance = ($varR - 2.0 * $rtp * $covWR + $rtp * $rtp * $varW) / ($n * $meanW * $meanW);
+
+        if ($variance <= 0.0) {
+            return 0.0;
+        }
+
+        return sqrt($variance);
     }
 
     /**
-     * 95% confidence interval for the mean per-round return.
+     * 95% confidence interval for the observed RTP.
+     *
+     * Centred on the same ratio of sums the report prints, so the printed RTP
+     * always lies inside its own interval.
      *
      * @return array{low:float,high:float}|null
      */
@@ -264,11 +291,16 @@ final class SimulationStatistics
             return null;
         }
 
+        $rtp = $this->observedRtp();
+        if ($rtp === null) {
+            return null;
+        }
+
         $margin = 1.96 * $se;
 
         return [
-            'low'  => $this->meanReturn - $margin,
-            'high' => $this->meanReturn + $margin,
+            'low'  => $rtp - $margin,
+            'high' => $rtp + $margin,
         ];
     }
 

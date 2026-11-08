@@ -650,3 +650,46 @@ vendor/bin/phpstan analyse              =>  No errors
 
 * Phase 26 — final verification and publication: full acceptance-criteria pass,
   deployment documentation refresh, final commit and push, remote verification.
+
+---
+
+## Phase 26 — Final verification and publication
+
+**Date:** 2026-11-08.
+
+### Verification performed
+
+End-to-end acceptance pass over the running application (`php -S` on
+`127.0.0.1:8099`), covering the backend, the browser client and the
+administrator panel.
+
+| Area | Method | Result |
+| --- | --- | --- |
+| Health | `GET /api/v1/health` | `version 1.0.0`, 22 games registered |
+| Lobby | Browser | nav, category filters, search and 22 game cards render |
+| Slot play | Browser + DB | `/slots/jili.super-ace` spin wrote round 12 and debited the wallet |
+| Blackjack | Browser + DB | deal → stand → dealer bust, 2× payout of the 100 stake recorded |
+| Roulette | Browser + DB | red + straight-up bets, winning number 12, red paid 2×, straight lost, net 0 |
+| Admin RBAC | API | anonymous `401`, player token `403`, admin `200` |
+| Admin global profile | API | saved any-win 50% (v3), applied to all non-override games |
+| Probability governor | API | any-win target 0.10 → observed 0.10115; 0.90 → 0.90445 |
+| Audit trail | Browser | each save recorded with administrator identity and version |
+| Simulation tool | Browser + API | report renders configured-vs-observed; no wallet or history touched |
+
+### Defects found and fixed
+
+* **KI-13** — `.env` inline comment leaked into the reported engine version.
+* **KI-14** — the "RTP 95% interval" was centred on the mean per-round return
+  multiple rather than on the ratio-of-sums RTP it labelled; the two diverge
+  whenever stakes differ, as with blackjack doubling. Fixed with the
+  delta-method standard error of the ratio and a regression test proven to fail
+  on the previous implementation.
+
+### Verification
+
+```
+vendor/bin/phpunit                      =>  274 tests, 22777 assertions OK
+php -l (src + tests)                    =>  no syntax errors
+vendor/bin/phpcs --standard=phpcs.xml.dist  =>  0 errors
+vendor/bin/phpstan analyse              =>  No errors
+```

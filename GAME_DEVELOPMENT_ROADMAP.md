@@ -353,4 +353,4 @@ verified, **[O]** observed, **[E]** estimated or **[U]** unverified.
 | 23 | Game integration | **Complete** (all 18 games run through `RoundService`) |
 | 24 | Frontend | **Complete** — lobby, catalog, slot/blackjack/roulette interfaces |
 | 25 | Administrator panel (backend + frontend) | **Complete** — global/per-game probability, jackpot, simulation, audit |
-| 26 | Final verification and publication | In progress |
+| 26 | Final verification and publication | **Complete** — 274 tests green, PHPStan/PHPCS/syntax clean, KI-13 and KI-14 fixed, pushed |

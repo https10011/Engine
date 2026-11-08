@@ -92,6 +92,34 @@ final class SimulationStatisticsTest extends TestCase
         self::assertGreaterThan($statistics->observedRtp(), $interval['high']);
     }
 
+    /**
+     * The interval must bracket the RTP the report prints, not the mean of the
+     * per-round return multiples.
+     *
+     * The two coincide only when every round stakes the same amount. A doubled
+     * blackjack hand stakes twice as much, so the unweighted mean of multiples
+     * and the ratio of sums diverge — and an interval centred on the former
+     * can exclude the RTP the dashboard is showing.
+     */
+    public function testConfidenceIntervalIsCentredOnTheRatioOfSums(): void
+    {
+        $statistics = new SimulationStatistics();
+        // One losing 1.00 hand and one break-even 100.00 hand: multiples 0.0 and
+        // 1.0 average 0.5, but the ratio of sums is 10000/10100 ≈ 0.9901.
+        $statistics->record(100, 0);
+        $statistics->record(10000, 10000);
+
+        $rtp = $statistics->observedRtp();
+        $interval = $statistics->confidenceInterval95();
+
+        self::assertNotNull($rtp);
+        self::assertNotNull($interval);
+        self::assertGreaterThanOrEqual($interval['low'], $rtp);
+        self::assertLessThanOrEqual($interval['high'], $rtp);
+        // Centred on the ratio, so the midpoint is the RTP, not 0.5.
+        self::assertEqualsWithDelta($rtp, ($interval['low'] + $interval['high']) / 2, 1e-9);
+    }
+
     public function testExtremesAreTracked(): void
     {
         $statistics = new SimulationStatistics();

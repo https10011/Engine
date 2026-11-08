@@ -1,13 +1,13 @@
 # Project Status
 
 > Single-page truth about where the project stands.
-> Last updated: Phase 24/25 — frontend SPA, admin panel, jackpot settlement.
+> Last updated: Phase 26 — final verification, two defects fixed and published.
 
 ---
 
 ## Current phase
 
-**Engine phases 0–14 complete and published. Directive phases 15–25 complete.**
+**Engine phases 0–14 complete and published. Directive phases 15–26 complete.**
 
 All eighteen target games (16 slots, blackjack, roulette) are implemented,
 registered and verified end to end through `RoundService`. The player frontend
@@ -16,7 +16,10 @@ registered and verified end to end through `RoundService`. The player frontend
 payouts and recorded for the admin jackpot history. See the phase board below
 and `GAME_DEVELOPMENT_ROADMAP.md`.
 
-**Next: Phase 26 — final verification and publication.**
+Phase 26 verification is complete: 274 tests pass, PHP syntax, PHPCS and
+PHPStan are clean, and two defects found during the acceptance pass (KI-13,
+KI-14) are fixed and covered. The remaining step is the final push and remote
+confirmation.
 
 ---
 
@@ -161,10 +164,11 @@ None. Every tool needed for the remaining phases is installed and working.
 | --- | --- |
 | Engine completion commit | `8cdee06968bac1451486baa0aba00703b6992ab9` |
 | Phase 21–22 commit | `d0ee39d` — blackjack and roulette table games |
-| Phase 23 commit | recorded in the Phase 23 log entry (`DEVELOPMENT_LOG.md`) |
+| Phase 23 commit | `15478eb` — all 18 games integrated, multiplier columns widened |
+| Phase 24–25 commit | `4696202` — frontend SPA, admin panel, jackpot settlement |
 | Remote branch | `main` (origin) → `https://github.com/https10011/Engine.git` |
-| Push verified | yes — `git log origin/main` matches the local branch head |
-| Verified at | Phase 23 audit, 2026-11-08 |
+| Push verified | yes — `git ls-remote origin main` = `4696202998e64ef3eff4cbe8e5ef20c29ca2fc70` |
+| Verified at | Phase 26 audit, 2026-11-08 |
 
 Each directive phase is committed and pushed to `origin/main` as it completes.
 The engine's own completion commit is kept here for continuity with the earlier

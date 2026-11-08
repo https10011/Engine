@@ -110,6 +110,50 @@ any commercial title, and it does not claim to be an exact recreation.
 
 ## Resolved
 
+### KI-14 — "RTP 95% interval" was centred on the wrong estimator (resolved)
+**Found:** Phase 26 verification, 2026-11-08, by running the administrator's
+own simulation tool against `table.blackjack`.
+**Detail:** The report printed an RTP of `0.9878` alongside a "RTP 95% interval"
+of `0.9342 – 0.9883`. The interval was not centred on the RTP it labelled: it
+was built from the unweighted mean of the per-round return *multiples*
+(`Σ(returned/wagered)/n`) and its Welford variance, while the printed RTP is the
+ratio of sums (`Σreturned / Σwagered`). The two estimators agree only when every
+round stakes the same amount. Blackjack doubling stakes twice as much on some
+hands, so `total_wagered` (5688.00) exceeded `rounds` (5000) and the two
+diverged. A minimal reproduction — one losing 1.00 hand and one break-even
+100.00 hand — printed `observed_rtp = 0.9901` with an interval centred on
+`0.5000`. The interval could therefore exclude the very figure it was meant to
+bracket, which is misleading in a tool whose whole purpose is honest
+verification of configured odds.
+**Fix:** `SimulationStatistics::standardError()` now returns the delta-method
+(linearised) standard error of the ratio of sums, accumulated from streaming
+sums of `W²`, `R²` and `W·R`; `confidenceInterval95()` is centred on
+`observedRtp()`. For uniform stakes the estimator reduces exactly to the old
+formula, so the existing hand-worked test still passes unchanged.
+**Regression test:** `tests/Simulation/SimulationStatisticsTest.php::
+testConfidenceIntervalIsCentredOnTheRatioOfSums` — verified to fail on the old
+implementation (`Failed asserting that 0.5 matches expected 0.9901`) and pass on
+the new one.
+
+### KI-13 — `.env` inline comment became the engine version (resolved)
+**Found:** Phase 26 verification, 2026-11-08.
+**Detail:** The shipped `.env` and `.env.example` contained
+`ENGINE_VERSION_OVERRIDE=     # leave empty to use the engine's own version`.
+The environment parser only strips a trailing comment that is preceded by a
+space *and* follows a non-empty value, so when the value is empty the comment
+survives as the value. `/api/v1/health` therefore reported
+`"version":"# leave empty to use the engine's own version"` on a fresh install.
+It was cosmetic — no game logic reads `engine.version` — but it is a wrong
+public value and it made the version-printout untrustworthy.
+**Fix:** moved the explanation to its own comment line above the key in both
+`.env` and `.env.example`. The parser is core engine code, which this directive
+places out of scope, so the fix is in the shipped configuration rather than in
+`Env::loadFile()`; the parser's behaviour on an empty value with a trailing
+comment is documented here as a known limitation.
+**Regression test:** none added — this is a configuration-file defect, and the
+test suite constructs its own environment. Verified by hand against
+`/api/v1/health`, which now returns `1.0.0`.
+
 ### KI-11 — Payout multipliers overflowed `INT UNSIGNED` (resolved)
 **Found:** Phase 23 integration audit.
 **Detail:** The slot framework stores payout multipliers as exact rationals. On

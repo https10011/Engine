@@ -31,7 +31,11 @@ and everything else sits **above** it.
 ```
 /  (the deploy root)
 ├── public/            <-- web root; the ONLY reachable directory
-│   ├── index.php      front controller
+│   ├── index.php      front controller (API + SPA shell)
+│   ├── app.html       single-page application shell
+│   ├── assets/        CSS, JS and original SVG/CSS artwork
+│   │   ├── css/       app, games, views stylesheets
+│   │   └── js/        app.js, lib/ helpers, views/ per-game modules
 │   └── .htaccess      rewrite + security headers
 ├── src/               application source          (private)
 ├── config/            configuration               (private)
@@ -44,6 +48,13 @@ and everything else sits **above** it.
 ├── .env               secrets                     (private, gitignored)
 └── *.md               documentation
 ```
+
+The browser client is a single-page application served from `public/app.html`.
+The front controller returns that shell for every non-`/api/` route, and the
+client router decides which screen to show — the lobby, a game, the history
+view or the administrator dashboard. Static files under `assets/` are served
+directly by the web server (the `.htaccess` rewrite lets existing files
+through); nothing under `assets/` executes server-side code.
 
 If the host forces a single document root, point it at `public/` if at all
 possible. When that is impossible, keep the private directories above the web
@@ -163,6 +174,31 @@ php bin/console wallet:show --username=owner
 
 Then log in through the API to obtain a bearer token. See
 [API_SPECIFICATION.md](API_SPECIFICATION.md) for the full flow.
+
+### Granting the administrator role
+
+The administrator dashboard lives at `/admin` and its API under
+`/api/v1/admin/`. Both require a user with the `admin` role; a player token is
+rejected with `403` and no settings are ever read or written. Grant the role
+from the CLI — there is no HTTP path that can promote an account:
+
+```bash
+php bin/console user:admin --username=owner          # grant
+php bin/console user:admin --username=owner --revoke # revoke
+```
+
+Revocation takes effect on the very next request; the role is read from the
+database per call rather than cached in the token. See
+[docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md) for the dashboard, the probability
+model and the simulation tool.
+
+### Shipped probability defaults
+
+The engine ships with **no active probability constraint**: game outcomes are
+governed only by each game's own reel weights and paytable. The administrator
+dashboard is where a global or per-game any-win, RTP, jackpot or bonus target is
+deliberately introduced. A fresh install therefore has an empty
+`probability_profiles` table, and the game maths is the game's own maths.
 
 ---
 

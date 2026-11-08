@@ -155,10 +155,8 @@ final class SuperAce extends AbstractSlotGame
             ),
             count(self::PAYLINES),
             50,
-            // Calibrated against the published 96.00% return: the authored
-            // table measures 0.6838 with the full feature set, so the payout is
-            // scaled by 1404/1000. See the game specification.
-            [1404, 1000]
+            // Calibrated to the published 96.00% return; see the specification.
+            [1407878, 1000000]
         );
     }
 }

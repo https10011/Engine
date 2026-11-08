@@ -92,6 +92,60 @@ final class SlotParts
     }
 
     /**
+     * The standard 20-line set for a 5x3 grid.
+     *
+     * These are the conventional line shapes of the 20-line family: the three
+     * straight lines, the four shallow diagonals, and the mirrored variants.
+     * Sharing them keeps the line geometry identical between the games that use
+     * the 20-line model, so a difference between two such games is always a
+     * difference in their symbols, strips or features rather than an accidental
+     * difference in what a line means.
+     *
+     * @return list<list<int>>
+     */
+    public static function paylines20x3(): array
+    {
+        return [
+            [1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0],
+            [2, 2, 2, 2, 2],
+            [0, 0, 1, 2, 2],
+            [2, 2, 1, 0, 0],
+            [1, 0, 0, 0, 1],
+            [1, 2, 2, 2, 1],
+            [0, 1, 2, 1, 0],
+            [2, 1, 0, 1, 2],
+            [1, 2, 1, 0, 1],
+            [1, 0, 1, 2, 1],
+            [0, 2, 0, 2, 0],
+            [2, 0, 2, 0, 2],
+            [0, 1, 1, 1, 0],
+            [2, 1, 1, 1, 2],
+            [1, 1, 0, 1, 1],
+            [1, 1, 2, 1, 1],
+            [0, 0, 1, 0, 0],
+            [2, 2, 1, 2, 2],
+            [0, 1, 0, 1, 0],
+        ];
+    }
+
+    /**
+     * The standard 5-line set for a 3x3 grid.
+     *
+     * @return list<list<int>>
+     */
+    public static function paylines3x3(): array
+    {
+        return [
+            [1, 1, 1],
+            [0, 0, 0],
+            [2, 2, 2],
+            [0, 1, 2],
+            [2, 1, 0],
+        ];
+    }
+
+    /**
      * Standard metadata for a slot.
      *
      * @param list<string> $tags

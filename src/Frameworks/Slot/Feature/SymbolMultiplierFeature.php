@@ -30,12 +30,19 @@ final class SymbolMultiplierFeature implements FeatureInterface, SpinLifecycleIn
 
     /**
      * @param list<int> $values Multiplier values the symbol may carry
+     * @param list<int>|null $weights Relative frequency of each value
      */
     public function __construct(
         private readonly string $symbolId,
         private readonly array $values = [2, 3, 5, 10, 25, 50, 100, 250, 500, 1000],
-        private readonly bool $roundScoped = false
+        private readonly bool $roundScoped = false,
+        private readonly ?array $weights = null
     ) {
+        if ($this->weights !== null && count($this->weights) !== count($this->values)) {
+            throw new \CasinoEngine\Core\Exception\ConfigurationException(
+                'A multiplier ladder needs one weight per value.'
+            );
+        }
     }
 
     public function type(): string
@@ -89,7 +96,7 @@ final class SymbolMultiplierFeature implements FeatureInterface, SpinLifecycleIn
 
                 $value = $this->values === []
                     ? 1
-                    : $this->values[$context->rng->int(0, count($this->values) - 1)];
+                    : $this->values[$this->drawIndex($context)];
                 $sequence += $value;
                 $drawn++;
             }
@@ -171,6 +178,24 @@ final class SymbolMultiplierFeature implements FeatureInterface, SpinLifecycleIn
                 'applied_once' => true,
             ]
         );
+    }
+
+    /**
+     * Draws a ladder position, honouring the configured weighting.
+     *
+     * A ladder is heavily skewed: the x1,000 symbol is a thousand times rarer
+     * than the x2 one, and drawing uniformly would make the average multiplier
+     * enormous and price the game out of its published return. The weights
+     * express that skew and are what makes the top of the ladder a genuine
+     * long shot.
+     */
+    private function drawIndex(FeatureContext $context): int
+    {
+        if ($this->weights === null) {
+            return $context->rng->int(0, count($this->values) - 1);
+        }
+
+        return $context->rng->weightedIndex($this->weights);
     }
 
     /**

@@ -150,8 +150,9 @@ final class PinataWins extends AbstractSlotGame
                 // in the game specification.
                 $features[] = new SymbolMultiplierFeature(
                     'FR',
-                    [2, 2, 3, 3, 5, 8, 10, 15, 25],
-                    false
+                    [2, 3, 5, 8, 10, 15, 25],
+                    false,
+                    [400, 250, 150, 90, 50, 30, 10]
                 );
 
                 if ($configuration->freeSpinsEnabled) {
@@ -176,8 +177,8 @@ final class PinataWins extends AbstractSlotGame
             ),
             count(self::PAYLINES),
             50,
-            // Calibrated to the published 96.75% return; see the spec.
-            [3147, 10000]
+            // Calibrated to the published 96.75% return; see the specification.
+            [583799, 1000000]
         );
     }
 }

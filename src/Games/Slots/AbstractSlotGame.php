@@ -137,6 +137,11 @@ abstract class AbstractSlotGame implements GameInterface
         $spinConfiguration = $configuration->toArray();
         $spinConfiguration['jackpot_probability'] = $profile->jackpotProbability ?? 0.0;
         $spinConfiguration['jackpot_tiers'] = $profile->jackpotTiers;
+        // A feature factory may need to know which phase the spin belongs to —
+        // a game whose multiplier ladder is steeper inside its free spins
+        // builds a different feature for each. The state is authoritative, so
+        // the flag is read from it rather than from the request.
+        $spinConfiguration['is_free_spin'] = $state->isInFreeSpins();
 
         $forced = $this->forcedPositions($action);
         $engine = $this->buildEngine($configuration, $definition, $spinConfiguration);
@@ -215,6 +220,17 @@ abstract class AbstractSlotGame implements GameInterface
             if ($scale !== 1.0) {
                 $payout = $payout->multiply(Ratio::fromNumber($scale));
             }
+        }
+
+        // Every one of the target titles publishes a maximum win, and a ways
+        // game reaches it easily: 32,400 ways multiplied by any integer
+        // paytable is millions of times the bet. The cap is therefore part of
+        // the game's mathematics rather than a safety net — it is the
+        // published figure, and applying it is what makes the measured return
+        // the published one.
+        $cap = Ratio::of($definition->metadata()->maxWinMultiplier(), 1);
+        if ($payout->toFloat() > $cap->toFloat()) {
+            $payout = $cap;
         }
 
         return new GameOutcome(

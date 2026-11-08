@@ -18,8 +18,25 @@ use CasinoEngine\Core\Contract\FeatureTransition;
  * ladder the final value repeats, which is the usual convention and keeps the
  * multiplier bounded.
  */
-final class ComboMultiplierFeature implements FeatureInterface
+final class ComboMultiplierFeature implements FeatureInterface, SpinLifecycleInterface
 {
+    /**
+     * The trail is per spin.
+     *
+     * A combo multiplier is a tumble ladder: the first cascade of a spin pays
+     * the ladder's first rung and the third pays its third. Without this reset
+     * the index would survive a spin that ended on a win and the next spin
+     * would open part-way up the ladder, so the multiplier a player saw would
+     * depend on the previous spin rather than on this one's cascades.
+     *
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    public function onSpinStart(array $state): array
+    {
+        return ['index' => 0, 'multiplier' => 1];
+    }
+
     /**
      * @param list<int> $ladder Multiplier per consecutive winning spin
      */

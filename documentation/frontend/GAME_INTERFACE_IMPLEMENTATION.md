@@ -115,10 +115,11 @@ paytable, features and bet limits.
 | Blackjack | 2 | one real deal; Hit/Stand/Double rendered from state |
 | Roulette | 2 | one straight-up bet + spin; 36.00 payout checked |
 | Coin flip | 1 | one real flip; tails face and loss text checked |
-| **Total** | **22** | 4 modules settled end-to-end; all 22 open their interface |
+| **Total** | **22** | 4 modules settled end-to-end; all 22 are exposed in the catalogue |
 
-The remaining 18 modules were opened and rendered (lobby → tile → view) in the catalogue
-and share the exercised code paths. No module has a bespoke fake state.
+The remaining 18 slot modules use the same cabinet that was exercised with
+`jili.super-ace`; they were verified as catalogue entries and presentation payloads,
+not each individually spun. No module has a bespoke fake state.
 
 ## 8. Extending
 

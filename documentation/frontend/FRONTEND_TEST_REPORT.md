@@ -108,8 +108,10 @@ before the fixes.
 * Real currency, deposit or withdrawal flows — none exist.
 * The administrator panel was not exercised in this browser run; it was not changed
   except by shared CSS.
-* All 22 games were opened from the catalogue, but only four modules (one per interface)
-  were settled with live actions; the other 18 slots share the same code path.
+* All 22 games are listed from the live catalogue and map to a working interface, but
+  only four modules (one per interface) were settled with live actions. The other 18
+  slots render through the exercised cabinet; they were not each individually spun in
+  this run.
 * Load/performance testing and production web-server (Apache/nginx) serving; the built-in
   PHP server and `public/.htaccess` were used.
 

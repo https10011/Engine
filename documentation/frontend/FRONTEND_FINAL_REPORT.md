@@ -93,7 +93,7 @@ database must be reachable; the interface has no other service dependency.
 | `7e87359` | self-service registration endpoint, config, tests, API specification |
 | `edcdeee` | AURUM shell, design system, lobby, game views, generated artwork |
 | `86cd5c3` | inventory, asset generation and browser verification tooling |
-| documentation commit | the documents in this directory and the README frontend section |
+| `5800d01` | the documents in this directory and the README frontend section (plus a follow-up wording correction) |
 
 Branch: `freebuff/6ad6f9aa37015975ddeaebcc` (pushed to the connected repository's `main`,
 as requested).
@@ -103,7 +103,8 @@ as requested).
 * Browser verification used Chromium only; Safari/iOS and Firefox were not available.
   No screen-reader or automated WCAG audit was run.
 * Only four modules were settled with live actions (one per interface); the other 18
-  slots were opened and share the exercised code path. No game has a fake state.
+  slots share the exercised cabinet but were not individually spun. No game has a fake
+  state.
 * The 22 tiles are generated placeholders labelled `ENGINE APPROXIMATION`; licensed
   provider artwork can replace them at the documented paths
   ([MISSING_GAME_ASSETS.md](MISSING_GAME_ASSETS.md)).

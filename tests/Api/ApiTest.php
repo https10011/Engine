@@ -165,6 +165,49 @@ final class ApiTest extends DatabaseTestCase
         self::assertSame($unknown->error['message'], $wrong->error['message']);
     }
 
+    public function testRegistrationCreatesAVirtualWalletAndSignsThePlayerIn(): void
+    {
+        $response = $this->post('/api/v1/auth/register', [
+            'username'     => 'newplayer',
+            'password'     => 'a-long-enough-password',
+            'display_name' => 'New Player',
+        ]);
+
+        self::assertSame(201, $response->status, $response->body());
+        self::assertSame('newplayer', $response->data['user']['username']);
+        self::assertSame('player', $response->data['user']['role']);
+        self::assertSame(100000, $response->data['balance']['amount']);
+        self::assertNotSame('', $response->data['token']);
+
+        // The returned token is a real session, not just a registration receipt.
+        $wallet = $this->get('/api/v1/wallet', ['authorization' => 'Bearer ' . $response->data['token']]);
+        self::assertSame(200, $wallet->status);
+        self::assertSame(100000, $wallet->data['balance']['amount']);
+    }
+
+    public function testRegistrationRejectsADuplicateUsername(): void
+    {
+        $body = ['username' => 'takenname', 'password' => 'a-long-enough-password'];
+        $this->post('/api/v1/auth/register', $body);
+
+        $second = $this->post('/api/v1/auth/register', $body);
+
+        self::assertSame(422, $second->status);
+        self::assertSame('VALIDATION_ERROR', $second->error['code']);
+    }
+
+    public function testRegistrationRejectsAShortPasswordAndAMalformedUsername(): void
+    {
+        $short = $this->post('/api/v1/auth/register', ['username' => 'shortpass', 'password' => 'short']);
+        self::assertSame(422, $short->status);
+
+        $badName = $this->post('/api/v1/auth/register', [
+            'username' => 'no spaces allowed',
+            'password' => 'a-long-enough-password',
+        ]);
+        self::assertSame(422, $badName->status);
+    }
+
     public function testProtectedEndpointRequiresAToken(): void
     {
         $response = $this->get('/api/v1/wallet');

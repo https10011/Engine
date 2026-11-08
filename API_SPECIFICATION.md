@@ -90,8 +90,46 @@ A wrong password and an unknown username return the **same** 401 message, so the
 endpoint cannot be used to enumerate accounts. A successful and a failed login
 are both written to the audit trail (without the password).
 
+### Self-service registration
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{ "username": "player1", "password": "at-least-10-chars", "display_name": "Player One" }
+```
+
+The response has the same shape as a successful login (`201`):
+
+```json
+{
+  "ok": true,
+  "data": {
+    "user": { "id": 7, "username": "player1", "display_name": "Player One", "role": "player" },
+    "token": "…",
+    "expires_at": "2026-11-08T10:00:00+00:00",
+    "balance": { "amount": 100000, "currency": "PHP", "scale": 2, "formatted": "₱1000.00" }
+  },
+  "error": null,
+  "meta": {}
+}
+```
+
+Rules:
+
+* username must match `^[A-Za-z0-9._-]{3,64}$` and be unique;
+* password 10–128 characters;
+* display name at most 64 characters (defaults to the username);
+* user and virtual wallet are created in one transaction;
+* no payment, deposit or email step exists.
+
+The starting balance is `REGISTRATION_STARTING_BALANCE_MINOR` (default `100000` = PHP
+1,000.00). Set `ALLOW_SELF_REGISTRATION=false` to disable the route; operators can still
+provision accounts with the `user:create` console command.
+
 | Route | Auth | Returns |
 | --- | --- | --- |
+| `POST /auth/register` | no | 201; user, token, expiry, balance (when enabled) |
 | `POST /auth/login` | no | user, token, expiry, balance |
 | `GET /auth/me` | yes | user, balance |
 | `POST /auth/logout` | yes | 204; revokes the presented token |

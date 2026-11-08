@@ -18,11 +18,13 @@ use CasinoEngine\Api\Middleware\SessionOwnershipMiddleware;
 use CasinoEngine\Api\Route\Route;
 use CasinoEngine\Api\Route\Router;
 use CasinoEngine\Core\Contract\Service\ClockInterface;
+use CasinoEngine\Core\Database\ConnectionInterface;
 use CasinoEngine\Core\Engine;
 use CasinoEngine\Core\Registry\GameRegistryInterface;
 use CasinoEngine\Persistence\Repository\ProbabilityRepository;
 use CasinoEngine\Persistence\Repository\RateLimitRepository;
 use CasinoEngine\Persistence\Repository\UserRepository;
+use CasinoEngine\Persistence\Repository\WalletRepository;
 use CasinoEngine\Services\Auth\AuthService;
 use CasinoEngine\Services\Auth\AuthServiceInterface;
 use CasinoEngine\Services\Probability\ProbabilityConfigServiceInterface;
@@ -101,11 +103,21 @@ final class ApiKernel
      */
     private function registerAuthRoutes(Router $router, AuthService $auth, \CasinoEngine\Core\Container $container): void
     {
+        $security = $container->config();
         $controller = new AuthController(
             $auth,
-            $container->get(WalletServiceInterface::class)
+            $container->get(WalletServiceInterface::class),
+            $container->get(UserRepository::class),
+            $container->get(WalletRepository::class),
+            $container->get(ConnectionInterface::class),
+            $container->get(ClockInterface::class),
+            (int) $security->get('security.registration_starting_balance_minor', 100000),
+            (string) $security->get('engine.currency', 'PHP'),
+            (int) $security->get('betting.currency_minor_units', 2),
+            (bool) $security->get('security.allow_self_registration', true)
         );
 
+        $router->add(new Route('POST', '/api/v1/auth/register', $controller->register(...)));
         $router->add(new Route('POST', '/api/v1/auth/login', $controller->login(...)));
         $router->add(new Route('GET', '/api/v1/auth/me', $controller->me(...), ['auth']));
         $router->add(new Route('POST', '/api/v1/auth/logout', $controller->logout(...), ['auth']));

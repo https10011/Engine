@@ -58,6 +58,39 @@ vendor/bin/phpunit
 
 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for production setup.
 
+## Player frontend (AURUM)
+
+The repository ships a dependency-free mobile-first player interface on top of the API.
+It is served by the same PHP entry point, so the quick start above is all that is
+needed:
+
+```bash
+php bin/console serve --host=0.0.0.0 --port=3000
+# open http://localhost:3000/
+```
+
+* **Lobby** — live catalogue from `GET /api/v1/games/lobby`, carousel, category filters,
+  search, max-win and slot shelves; public until a game is opened.
+* **Games** — every registered module opens a working interface: one slot cabinet
+  (17 slots), blackjack, roulette and coin flip. Outcomes are always settled by the
+  server.
+* **Account** — self-service registration (`POST /api/v1/auth/register`), login, logout,
+  balance, `My play` rounds and wallet ledger.
+* **Administration** — the existing probability panel for administrator accounts.
+
+The interface is branded **AURUM** and uses original artwork generated from engine theme
+metadata. It distributes no third-party provider art or real-money promotional material,
+and has no deposit, withdrawal or payment step. Design and implementation notes are in
+[documentation/frontend/](documentation/frontend/FRONTEND_FINAL_REPORT.md).
+
+Browser verification scripts (`tools/mobile_check.mjs`, `tools/desktop_check.mjs`) are
+optional development aids; they need Playwright installed outside the repository. The
+PHP suite remains the required check:
+
+```bash
+composer check
+```
+
 ## Directory structure
 
 ```

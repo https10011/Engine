@@ -10,7 +10,7 @@
 // presentation payload, so a European table draws a single-zero wheel and an
 // American table would draw the double-zero one without a frontend change.
 
-import { el, mount, money, ratio } from '../lib/dom.js';
+import { el, mount, money, ratio, providerLabel } from '../lib/dom.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, applyTheme } from '../lib/ui.js';
 import * as store from '../lib/store.js';
@@ -334,6 +334,7 @@ export async function renderRoulette(context) {
       lastSpin = detail;
       history.push(detail.winning_number);
       if (history.length > 12) history.shift();
+      paintHistory();
 
       await animateWheel(detail.winning_number);
 
@@ -452,10 +453,10 @@ export async function renderRoulette(context) {
 
   const layout = el('div', { class: 'table table--roulette' }, [
     el('div', { class: 'slot__head' }, [
-      el('span', { class: 'slot__emblem', text: theme.emblem || '◉', 'aria-hidden': 'true' }),
+      el('img', { class: 'slot__art', src: `/assets/games/${game.id}.svg`, alt: '', width: '46', height: '46' }),
       el('div', { class: 'slot__titles' }, [
         el('span', { class: 'slot__name', text: game.name }),
-        el('span', { class: 'slot__provider', text: game.provider }),
+        el('span', { class: 'slot__provider', text: providerLabel(game.provider) }),
       ]),
       el('span', { class: 'spacer' }),
       el('div', { class: 'slot__badges' }, [

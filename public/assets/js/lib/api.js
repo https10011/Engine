@@ -28,14 +28,30 @@ async function request(method, path, { body, auth = true, idempotencyKey } = {})
   }
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
 
+  const send = () => fetch(BASE + path, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    // Authentication is the explicit bearer header. Same-origin credentials
+    // are sent so a hosting gateway can recognise its own preview session;
+    // no cookie is ever read by the engine, and a cross-origin request cannot
+    // carry either the cookie or the token implicitly.
+    credentials: 'same-origin',
+  });
+
   let response;
   try {
-    response = await fetch(BASE + path, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      credentials: 'omit',
-    });
+    response = await send();
+
+    // Some preview gateways answer the first non-document request of a fresh
+    // session with an HTML 403 before their session cookie is settled. A safe
+    // GET is retried once, and only when the body is not our JSON envelope, so
+    // a genuine authorisation failure is never retried or hidden.
+    const contentType = response.headers.get('content-type') || '';
+    if (method === 'GET' && response.status === 403 && !contentType.includes('json')) {
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      response = await send();
+    }
   } catch (cause) {
     throw new ApiError('The server could not be reached.', { code: 'NETWORK' });
   }
@@ -79,6 +95,10 @@ export const api = {
 
   // Auth
   login: (username, password) => request('POST', '/auth/login', { body: { username, password }, auth: false }),
+  register: (username, password, displayName) => request('POST', '/auth/register', {
+    body: { username, password, display_name: displayName },
+    auth: false,
+  }),
   me: () => request('GET', '/auth/me'),
   logout: () => request('POST', '/auth/logout', { body: {} }),
 

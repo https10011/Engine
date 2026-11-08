@@ -1,163 +1,398 @@
 // The lobby and the game catalogue.
 //
-// One view serves three routes — the full lobby, the slot category and the
-// table category — because they are the same catalogue with a different filter.
-// Cards are built from `/api/v1/games/lobby`, so the lobby renders before a
-// player signs in.
+// One view serves the full lobby and the three category routes; the only
+// difference is which filter starts active. Every card is built from
+// `/api/v1/games/lobby`, which is public, so the floor renders before a player
+// signs in. Opening a game needs an account and the view says so instead of
+// silently failing.
+//
+// Nothing here invents a number: RTP, max win and bet limits are the engine's
+// metadata, and the "max win" shelf is sorted by the multiplier the module
+// reports.
 
-import { el, frag, mount, money, percent } from '../lib/dom.js';
+import { el, mount, providerLabel } from '../lib/dom.js';
+import { icon } from '../lib/icons.js';
 import { api, ApiError } from '../lib/api.js';
-import { toast, errorState, emptyState, applyTheme } from '../lib/ui.js';
+import { toast, errorState, emptyState } from '../lib/ui.js';
 import * as store from '../lib/store.js';
 import * as sound from '../lib/sound.js';
 
-const CATEGORIES = [
-  { value: '', label: 'All games' },
-  { value: 'slot', label: 'Slots' },
-  { value: 'card', label: 'Card tables' },
-  { value: 'roulette', label: 'Roulette' },
+const RECENT_KEY = 'aurum.recent';
+const RECENT_LIMIT = 8;
+
+const CATEGORY_LABEL = { slot: 'Slots', card: 'Table games', roulette: 'Roulette' };
+
+// Original promotional copy. No deposits, bonuses or prizes are promised
+// because the engine has no payment rail and no real-money value.
+const SLIDES = [
+  {
+    kicker: 'Virtual credits',
+    title: 'The floor is open. <em>Every result is server-settled.</em>',
+    sub: 'Twenty-two games, one virtual wallet, nothing to deposit.',
+    cta: 'Explore the games',
+    href: '/slots',
+  },
+  {
+    kicker: 'New accounts',
+    title: 'Start with <em>1,000.00 credits</em>. No card, ever.',
+    sub: 'Create a player account and the engine opens a virtual wallet for it.',
+    cta: 'Create an account',
+    action: 'open-register',
+  },
+  {
+    kicker: 'How it works',
+    title: 'The browser never <em>decides an outcome</em>.',
+    sub: 'Each bet is posted to the engine, settled with the game module, and returned as a round.',
+    cta: 'See how play settles',
+    href: '/history',
+    requiresAuth: true,
+  },
 ];
+
+const PATHS = { all: '/', slot: '/slots', card: '/tables', roulette: '/roulette' };
 
 export async function renderLobby(context) {
   const locked = context.lockedCategory || null;
-  let category = locked || '';
+  let filter = locked || 'all';
   let query = '';
+  let games = [];
+  let timer = null;
+  let slide = 0;
+  let destroyed = false;
 
   const node = el('div', { class: 'fade-in' });
-  const toolbar = el('div', { class: 'toolbar' });
-  const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Game categories' });
-  const search = el('input', {
-    class: 'search',
-    type: 'search',
-    placeholder: 'Search games…',
-    'aria-label': 'Search games by name or provider',
-    oninput: (event) => { query = event.target.value.trim().toLowerCase(); paint(); },
-  });
+  const banner = buildBanner();
+  const search = buildSearchbar();
+  const cats = el('div', { class: 'cat-rail', role: 'group', 'aria-label': 'Game categories' });
+  const results = el('div');
 
-  if (!locked) {
-    for (const option of CATEGORIES) {
-      const chip = el('button', {
-        class: 'chip',
-        type: 'button',
-        text: option.label,
-        'aria-pressed': option.value === category ? 'true' : 'false',
-        onClick: () => {
-          category = option.value;
-          chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
-          chip.setAttribute('aria-pressed', 'true');
-          load();
-        },
-      });
-      chips.append(chip);
-    }
-    toolbar.append(chips, el('span', { class: 'spacer' }), search);
+  mount(node, [banner.node, search.bar, cats, results]);
+
+  /* ------------------------------------------------------------- categories */
+
+  function paintCategories() {
+    const counts = { all: games.length };
+    for (const g of games) counts[g.game.category] = (counts[g.game.category] || 0) + 1;
+
+    const options = [
+      { key: 'all', label: 'All games', icon: 'grid' },
+      { key: 'slot', label: 'Slots', icon: 'slots' },
+      { key: 'card', label: 'Tables', icon: 'cards' },
+      { key: 'roulette', label: 'Roulette', icon: 'wheel' },
+    ];
+
+    mount(cats, options.map((option) => el('button', {
+      class: 'cat',
+      type: 'button',
+      'aria-pressed': filter === option.key ? 'true' : 'false',
+      onClick: () => {
+        if (locked && option.key !== locked) {
+          context.navigate(PATHS[option.key]);
+          return;
+        }
+        filter = option.key;
+        paintCategories();
+        paintResults();
+      },
+    }, [
+      el('span', { class: 'cat__icon' }, [icon(option.icon)]),
+      el('span', { text: option.label }),
+      el('span', { class: 'cat__count', text: String(counts[option.key] ?? 0) }),
+    ])));
   }
 
-  const hero = el('section', { class: 'hero' }, [
-    el('h1', { text: locked === 'slot' ? 'Slot games' : locked === 'card' ? 'Table games' : 'The floor' }),
-    el('p', {
-      text: locked === 'slot'
-        ? 'Sixteen titles, each with its own symbols, paytable and feature set. Outcomes are produced by the engine, never by this page.'
-        : locked === 'card'
-          ? 'Blackjack and roulette, played against the engine with configurable table rules.'
-          : 'Sixteen slots and two table games, all settled by the server. Pick a title to open its own interface.',
-    }),
-  ]);
+  /* ---------------------------------------------------------------- results */
 
-  const results = el('div', { class: 'results' });
+  function paintResults() {
+    if (query) {
+      const needle = query.toLowerCase();
+      const matches = games.filter(({ game }) => {
+        const haystack = `${game.name} ${game.provider} ${(game.tags || []).join(' ')} ${game.category}`.toLowerCase();
+        return haystack.includes(needle);
+      }).filter(({ game }) => filter === 'all' || game.category === filter);
 
-  mount(node, [hero, toolbar, results]);
+      if (matches.length === 0) {
+        mount(results, [emptyState(
+          'No games match',
+          `Nothing matches “${query}”${filter === 'all' ? '' : ` in ${CATEGORY_LABEL[filter] || filter}`}.`,
+          el('button', { class: 'btn btn--ghost', type: 'button', onClick: () => { search.input.value = ''; query = ''; paintResults(); } }, 'Clear search'),
+        )]);
+        return;
+      }
 
-  let games = [];
-
-  function paint() {
-    const filtered = query
-      ? games.filter((card) => {
-          const haystack = `${card.game.name} ${card.game.provider} ${(card.game.tags || []).join(' ')}`.toLowerCase();
-          return haystack.includes(query);
-        })
-      : games;
-
-    if (filtered.length === 0) {
-      mount(results, [emptyState(
-        'No games match',
-        query ? `Nothing matches “${query}”.` : 'This category has no games yet.',
-        el('button', { class: 'btn', type: 'button', onClick: () => { search.value = ''; query = ''; paint(); } }, 'Clear search')
-      )]);
+      mount(results, [
+        el('p', { class: 'results-meta' }, [el('strong', { text: String(matches.length) }), ' games found']),
+        el('div', { class: 'tiles' }, matches.map(tile)),
+      ]);
       return;
     }
 
-    mount(results, [el('div', { class: 'grid' }, filtered.map(card))]);
-  }
-
-  function card(entry) {
-    const { game, theme } = entry;
-    const node = el('button', {
-      class: 'card',
-      type: 'button',
-      'aria-label': `Play ${game.name}`,
-      onClick: () => open(game, theme),
-    });
-
-    applyTheme(node, theme);
-
-    mount(node, [
-      el('div', { class: 'card__art' }, [
-        el('span', { class: 'card__category', text: game.category }),
-        el('span', { class: 'card__emblem', text: theme.emblem || '◆', 'aria-hidden': 'true' }),
-      ]),
-      el('div', { class: 'card__body' }, [
-        el('strong', { class: 'card__title', text: game.name }),
-        el('span', { class: 'card__pitch', text: theme.pitch || '' }),
-        el('div', { class: 'card__stats' }, [
-          el('span', { class: 'card__stat' }, ['RTP ', el('strong', { text: percent(game.rtp) })]),
-          el('span', { class: 'card__stat' }, ['Max ', el('strong', { text: `${game.max_win_multiplier}×` })]),
-          el('span', { class: 'card__stat' }, ['From ', el('strong', { text: money(game.min_bet.amount, game.min_bet.scale, '') })]),
+    if (filter !== 'all') {
+      const filtered = games.filter(({ game }) => game.category === filter);
+      mount(results, [
+        el('div', { class: 'section' }, [
+          el('div', { class: 'shelf__head' }, [
+            el('h2', { class: 'shelf__title', text: CATEGORY_LABEL[filter] || filter }),
+            el('span', { class: 'shelf__badge', text: `${filtered.length} games` }),
+          ]),
+          filtered.length
+            ? el('div', { class: 'tiles' }, filtered.map(tile))
+            : emptyState('Nothing here yet', 'This category has no enabled games.'),
         ]),
-      ]),
-    ]);
+        trustStrip(),
+      ]);
+      return;
+    }
 
-    return node;
+    const topWin = [...games]
+      .sort((a, b) => (b.game.max_win_multiplier || 0) - (a.game.max_win_multiplier || 0))
+      .slice(0, 10);
+    const slots = games.filter(({ game }) => game.category === 'slot');
+    const tables = games.filter(({ game }) => game.category !== 'slot');
+    const recent = recentGames(games);
+
+    mount(results, [
+      recent.length ? shelf('Continue playing', 'Your last few titles on this device', recent) : null,
+      shelf('Biggest max win', 'Highest multiplier the engine reports', topWin),
+      shelf('Slot games', `${slots.length} titles with their own math`, slots),
+      shelf('Tables & roulette', `${tables.length} games dealt by the engine`, tables),
+      el('div', { class: 'section' }, [
+        el('div', { class: 'shelf__head' }, [
+          el('h2', { class: 'shelf__title', text: 'All games' }),
+          el('span', { class: 'shelf__badge', text: `${games.length}` }),
+        ]),
+        el('div', { class: 'tiles' }, games.map(tile)),
+      ]),
+      trustStrip(),
+    ]);
   }
 
-  async function open(game, theme) {
+  function shelf(title, note, entries, href = null) {
+    if (entries.length === 0) return null;
+    return el('div', { class: 'section shelf' }, [
+      el('div', { class: 'shelf__head' }, [
+        el('h2', { class: 'shelf__title', text: title }),
+        el('span', { class: 'shelf__note', text: note }),
+        href ? el('a', { class: 'shelf__more', href, 'data-link': true, text: 'See all' }) : null,
+      ]),
+      el('div', { class: 'shelf__rail' }, entries.map(tile)),
+    ]);
+  }
+
+  function tile(entry) {
+    const { game } = entry;
+    const hot = Number(game.max_win_multiplier) >= 1000;
+    return el('button', {
+      class: game.category === 'slot' ? 'tile' : 'tile tile--table',
+      type: 'button',
+      'aria-label': `Play ${game.name} — ${(Number(game.rtp) * 100).toFixed(2)}% RTP`,
+      onClick: () => open(game),
+    }, [
+      el('span', { class: 'tile__art' }, [
+        el('img', { src: `/assets/games/${game.id}.svg`, alt: '', loading: 'lazy', width: '300', height: '300' }),
+        hot ? el('span', { class: 'tile__hot', text: 'HOT' }) : null,
+        el('span', { class: 'tile__rtp', text: `${(Number(game.rtp) * 100).toFixed(1)}%` }),
+      ]),
+      el('span', { class: 'tile__label', text: game.name }),
+      el('span', { class: 'tile__sub', text: providerLabel(game.provider) }),
+    ]);
+  }
+
+  function trustStrip() {
+    const counts = games.reduce((acc, { game }) => {
+      acc[game.category] = (acc[game.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    return el('div', { class: 'trust' }, [
+      trust('shield', 'Server-settled rounds', 'The browser posts an action; the engine returns the outcome.'),
+      trust('lock', 'Virtual credits only', 'No deposits, withdrawals, purchases or real-money prizes.'),
+      trust('bolt', `${games.length} games, one wallet`, `${counts.slot || 0} slots, ${counts.card || 0} card games and ${counts.roulette || 0} roulette titles.`),
+    ]);
+  }
+
+  function trust(name, title, body) {
+    return el('div', { class: 'trust__item' }, [
+      el('span', { class: 'trust__icon' }, [icon(name)]),
+      el('div', {}, [el('strong', { text: title }), el('span', { text: body })]),
+    ]);
+  }
+
+  /* ----------------------------------------------------------------- open */
+
+  function open(game) {
     sound.sfx.click();
 
     if (!store.getToken()) {
       toast('Sign in to play — the lobby is public, the games need an account.');
-      document.querySelector('[data-action="open-login"]')?.click();
+      context.openLogin();
       return;
     }
 
-    if (game.category === 'slot') {
-      context.navigate(`/slots/${encodeURIComponent(game.id)}`);
-    } else if (game.category === 'roulette') {
-      context.navigate(`/tables/${encodeURIComponent(game.id)}`);
-    } else {
-      context.navigate(`/tables/${encodeURIComponent(game.id)}`);
-    }
+    rememberRecent(game.id);
+    context.navigate(game.category === 'slot'
+      ? `/slots/${encodeURIComponent(game.id)}`
+      : `/tables/${encodeURIComponent(game.id)}`);
   }
 
-  async function load() {
-    mount(results, [el('div', { class: 'grid' }, Array.from({ length: 8 }, () =>
-      el('div', { class: 'skeleton skeleton--card' })
-    ))]);
+  /* ---------------------------------------------------------------- banner */
 
+  function buildBanner() {
+    const track = el('div', { class: 'banner__track' });
+    const dots = el('div', { class: 'banner__dots', role: 'tablist', 'aria-label': 'Promotions' });
+
+    const slides = SLIDES.map((item, index) => el('div', {
+      class: 'banner__slide',
+      role: 'group',
+      'aria-roledescription': 'slide',
+      'aria-label': `${index + 1} of ${SLIDES.length}`,
+    }, [
+      el('img', { class: 'banner__art', src: `/assets/banners/slide-${index + 1}.svg`, alt: '', fetchpriority: index === 0 ? 'high' : 'low' }),
+      el('div', { class: 'banner__copy' }, [
+        el('span', { class: 'banner__kicker', text: item.kicker }),
+        el('h2', { class: 'banner__title', html: item.title }),
+        el('p', { class: 'banner__sub', text: item.sub }),
+        item.action
+          ? el('button', { class: 'banner__cta', type: 'button', 'data-action': item.action }, [item.cta, icon('arrow-right')])
+          : el('a', {
+            class: 'banner__cta',
+            href: item.href,
+            'data-link': true,
+            ...(item.requiresAuth ? { 'data-requires-auth': true } : {}),
+          }, [item.cta, icon('arrow-right')]),
+      ]),
+    ]));
+
+    mount(track, slides);
+
+    const dotButtons = SLIDES.map((item, index) => el('button', {
+      class: 'banner__dot',
+      type: 'button',
+      'aria-label': `Show promotion ${index + 1}`,
+      'aria-current': index === 0 ? 'true' : 'false',
+      onClick: () => go(index),
+    }));
+    mount(dots, dotButtons);
+
+    const prev = el('button', { class: 'banner__arrow banner__arrow--prev', type: 'button', 'aria-label': 'Previous promotion', onClick: () => go(slide - 1) }, [icon('chevron-left')]);
+    const next = el('button', { class: 'banner__arrow banner__arrow--next', type: 'button', 'aria-label': 'Next promotion', onClick: () => go(slide + 1) }, [icon('chevron-right')]);
+
+    const section = el('section', {
+      class: 'banner',
+      'aria-roledescription': 'carousel',
+      'aria-label': 'Promotions and how the casino works',
+    }, [track, prev, next, dots]);
+
+    // Touch swipe, because the reference is a mobile-first page.
+    let touchX = null;
+    section.addEventListener('touchstart', (event) => { touchX = event.touches[0].clientX; }, { passive: true });
+    section.addEventListener('touchend', (event) => {
+      if (touchX === null) return;
+      const delta = event.changedTouches[0].clientX - touchX;
+      if (Math.abs(delta) > 45) go(delta < 0 ? slide + 1 : slide - 1);
+      touchX = null;
+    }, { passive: true });
+
+    section.addEventListener('mouseenter', stop);
+    section.addEventListener('mouseleave', start);
+    section.addEventListener('focusin', stop);
+    section.addEventListener('focusout', start);
+
+    function go(index) {
+      slide = (index + SLIDES.length) % SLIDES.length;
+      slides.forEach((node, i) => node.classList.toggle('is-active', i === slide));
+      dotButtons.forEach((dot, i) => dot.setAttribute('aria-current', i === slide ? 'true' : 'false'));
+      stop();
+      start();
+    }
+
+    function start() {
+      stop();
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      timer = window.setInterval(() => go(slide + 1), 6500);
+    }
+
+    function stop() {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    slides[0].classList.add('is-active');
+    start();
+
+    return { node: section, stop };
+  }
+
+  /* ---------------------------------------------------------------- search */
+
+  function buildSearchbar() {
+    const input = el('input', {
+      type: 'search',
+      placeholder: 'Search games, providers or tags',
+      'aria-label': 'Search games, providers or tags',
+      oninput: (event) => { query = event.target.value.trim(); paintResults(); },
+    });
+
+    const bar = el('div', { class: 'lobby-toolbar' }, [
+      el('label', { class: 'searchbar' }, [icon('search'), input]),
+    ]);
+
+    return { bar, input };
+  }
+
+  /* ----------------------------------------------------------------- load */
+
+  async function load() {
     try {
-      const data = await api.lobby(category || undefined);
-      if (context.isStale()) return;
+      const data = await api.lobby();
+      if (context.isStale() || destroyed) return;
       games = data.games || [];
-      paint();
+      paintCategories();
+      paintResults();
     } catch (error) {
-      if (context.isStale()) return;
+      if (context.isStale() || destroyed) return;
       mount(results, [errorState(
         error instanceof ApiError ? error.message : 'The catalogue could not be loaded.',
-        load
+        load,
       )]);
     }
   }
 
   await load();
 
-  return { node };
+  return {
+    node,
+    destroy() {
+      destroyed = true;
+      if (timer) window.clearInterval(timer);
+      banner.stop?.();
+    },
+  };
 }
+
+/* ------------------------------------------------------------------ recent */
+
+function rememberRecent(gameId) {
+  try {
+    const previous = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    const next = [gameId, ...previous.filter((id) => id !== gameId)].slice(0, RECENT_LIMIT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // Storage may be unavailable; recent games are a convenience only.
+  }
+}
+
+function recentGames(games) {
+  if (!store.getToken()) return [];
+  try {
+    const ids = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    const index = new Map(games.map((entry) => [entry.game.id, entry]));
+    return ids.map((id) => index.get(id)).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+

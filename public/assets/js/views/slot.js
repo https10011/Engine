@@ -10,7 +10,8 @@
 // The client never decides a result. It posts `spin`, waits, and animates the
 // grid and the wins the server returned.
 
-import { el, mount, money, ratio } from '../lib/dom.js';
+import { el, mount, money, ratio, providerLabel } from '../lib/dom.js';
+import { icon } from '../lib/icons.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, applyTheme } from '../lib/ui.js';
 import * as store from '../lib/store.js';
@@ -24,7 +25,7 @@ import { renderTable } from './table.js';
 // game still renders without a frontend change.
 const GLYPHS = {
   T: '10', J: 'J', Q: 'Q', K: 'K', A: 'A',
-  GC: '🃏', JW: '★', SC: '✦', BONUS: '◆', WILD: '★',
+  GC: '♠', JW: '★', SC: '✦', BONUS: '◆', WILD: '★',
   // Mahjong and themed sets
   DRAGON: '中', BAMBOO: '竹', CIRCLE: '筒', FLOWER: '✿',
   // Gems / fruit
@@ -107,14 +108,21 @@ export async function renderSlot(context) {
     onClick: () => spin(),
   }, 'SPIN');
 
+  const soundIcon = el('span', { class: 'sound-toggle__icon' });
+  const soundLabel = el('span', { text: sound.isEnabled() ? 'Sound on' : 'Sound off' });
   const soundButton = el('button', {
     class: 'sound-toggle',
     type: 'button',
-    onClick: (event) => {
-      const on = sound.toggle();
-      event.target.textContent = on ? '🔊 Sound on' : '🔇 Sound off';
-    },
-  }, sound.isEnabled() ? '🔊 Sound on' : '🔇 Sound off');
+    'aria-pressed': sound.isEnabled() ? 'true' : 'false',
+    onClick: () => paintSound(sound.toggle()),
+  }, [soundIcon, soundLabel]);
+
+  function paintSound(on) {
+    mount(soundIcon, [icon(on ? 'sound' : 'sound-off')]);
+    soundLabel.textContent = on ? 'Sound on' : 'Sound off';
+    soundButton.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  paintSound(sound.isEnabled());
 
   function drawGrid(symbolIds, winningCells = new Set(), options = {}) {
     mount(grid, []);
@@ -145,6 +153,21 @@ export async function renderSlot(context) {
       }
       grid.append(column);
     }
+  }
+
+  // A neutral cabinet face before the first spin: the game's own symbols, no
+  // win lines and no readout. It is decoration, not a result.
+  function drawIdleGrid() {
+    const ids = Object.keys(symbolsById);
+    if (ids.length === 0) {
+      drawGrid(null);
+      return;
+    }
+    const face = [];
+    for (let r = 0; r < reels; r += 1) {
+      face.push(Array.from({ length: rows[r] || 3 }, (_, c) => ids[(r * 2 + c) % ids.length]));
+    }
+    drawGrid(face);
   }
 
   function winningCellsFrom(result) {
@@ -449,7 +472,7 @@ export async function renderSlot(context) {
   /* ---------------------------------------------------------------- assembly */
 
   const cabinet = el('div', { class: 'cabinet' });
-  drawGrid(null);
+  drawIdleGrid();
   mount(cabinet, [grid]);
 
   const controls = el('div', { class: 'controls' }, [
@@ -487,10 +510,10 @@ export async function renderSlot(context) {
 
   const stage = el('div', { class: 'slot__stage' }, [
     el('div', { class: 'slot__head' }, [
-      el('span', { class: 'slot__emblem', text: theme.emblem || '◆', 'aria-hidden': 'true' }),
+      el('img', { class: 'slot__art', src: `/assets/games/${game.id}.svg`, alt: '', width: '46', height: '46' }),
       el('div', { class: 'slot__titles' }, [
         el('span', { class: 'slot__name', text: game.name }),
-        el('span', { class: 'slot__provider', text: game.provider }),
+        el('span', { class: 'slot__provider', text: providerLabel(game.provider) }),
       ]),
       el('span', { class: 'spacer' }),
       el('div', { class: 'slot__badges' }, [

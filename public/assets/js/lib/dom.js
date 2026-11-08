@@ -16,7 +16,14 @@ export function el(tag, attrs = {}, children = []) {
     else if (key === 'text') node.textContent = String(value);
     else if (key === 'html') node.innerHTML = value; // only ever for inline icons we authored
     else if (key === 'dataset') Object.assign(node.dataset, value);
-    else if (key === 'style' && typeof value === 'object') Object.assign(node.style, value);
+    else if (key === 'style' && typeof value === 'object') {
+      for (const [property, propertyValue] of Object.entries(value)) {
+        // Custom properties are not CSSStyleDeclaration members, so assigning
+        // them directly silently does nothing. Use the setProperty API.
+        if (property.startsWith('--')) node.style.setProperty(property, String(propertyValue));
+        else node.style[property] = propertyValue;
+      }
+    }
     else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2).toLowerCase(), value);
     else if (value === true) node.setAttribute(key, '');
     else node.setAttribute(key, String(value));
@@ -72,4 +79,16 @@ export function ratio(r) {
 export function percent(value) {
   if (value === null || value === undefined) return '—';
   return `${(Number(value) * 100).toFixed(2)}%`;
+}
+
+/**
+ * Short provider label for tiles and headers.
+ *
+ * The engine reports provenance in full, e.g. "JILI Games (mechanics) /
+ * Engine Original (configuration)". The parenthetical and the second half are
+ * useful in a game's details, not on a 116px tile, so show the studio only.
+ */
+export function providerLabel(provider) {
+  const first = String(provider || '').split('/')[0].replace(/\([^)]*\)/g, '').trim();
+  return first || 'Engine Original';
 }

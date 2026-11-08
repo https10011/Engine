@@ -71,13 +71,15 @@ export async function renderHistory(context) {
       layout.querySelectorAll('table')[0].hidden = false;
       roundsEmpty.remove();
       mount(roundsBody, rounds.map((round) => {
-        const bet = round.bet?.amount ?? 0;
-        const payout = round.payout?.amount ?? 0;
-        const net = round.net?.amount ?? payout - bet;
+        // `/history/rounds` reports flat minor-unit integers; accept a money
+        // object too so the table keeps working if the envelope is adopted.
+        const bet = minorOf(round.bet);
+        const payout = minorOf(round.payout);
+        const net = minorOf(round.net) || payout - bet;
         const scale = round.bet?.scale ?? 2;
 
         return el('tr', {}, [
-          el('td', { class: 'mono', text: `#${round.round_number ?? round.id}` }),
+          el('td', { class: 'mono', text: `#${round.round_id ?? round.round_number ?? round.id}` }),
           el('td', { text: round.game_id }),
           el('td', { text: round.action }),
           el('td', { class: 'num', text: money(bet, scale, '') }),
@@ -93,12 +95,16 @@ export async function renderHistory(context) {
       ledgerEmpty.remove();
       mount(ledgerBody, entries.map((entry) => {
         const scale = entry.amount?.scale ?? 2;
-        const amount = entry.amount?.amount ?? 0;
+        const amount = minorOf(entry.amount ?? entry.amount_minor);
+        // The ledger stores debits as positive values; show the direction as a
+        // sign so a wager and a payout cannot be read as the same movement.
+        const signed = entry.type === 'debit' ? -amount : amount;
+        const after = minorOf(entry.balance_after ?? entry.balance_after_minor);
         return el('tr', {}, [
           el('td', { text: entry.type ?? entry.kind ?? '—' }),
-          el('td', { text: entry.label ?? '—' }),
-          el('td', { class: 'num' }, [el('span', { class: amount > 0 ? 'net--up' : amount < 0 ? 'net--down' : '', text: money(amount, scale, '') })]),
-          el('td', { class: 'num', text: money(entry.balance_after?.amount ?? 0, scale, '') }),
+          el('td', { text: entry.reason ?? entry.label ?? '—' }),
+          el('td', { class: 'num' }, [el('span', { class: signed > 0 ? 'net--up' : signed < 0 ? 'net--down' : '', text: money(signed, scale, '') })]),
+          el('td', { class: 'num', text: money(after, scale, '') }),
           el('td', { class: 'muted', text: formatWhen(entry.created_at) }),
         ]);
       }));
@@ -109,6 +115,11 @@ export async function renderHistory(context) {
   }
 
   return { node };
+}
+
+function minorOf(value) {
+  if (typeof value === 'number') return value;
+  return Number(value?.amount ?? 0);
 }
 
 function formatWhen(value) {

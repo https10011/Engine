@@ -3,77 +3,300 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0b1120">
-<title>Casino — Universal Game Engine</title>
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#083326">
+<title>AURUM — Virtual Casino</title>
+<meta name="description" content="AURUM is a virtual-credit casino powered by the Universal Casino Game Engine. Every outcome is settled by the server. No deposits, no withdrawals, no real money.">
+<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/brand/app-icon.svg">
 <link rel="stylesheet" href="/assets/css/app.css">
+<link rel="stylesheet" href="/assets/css/lobby.css">
 <link rel="stylesheet" href="/assets/css/games.css">
 <link rel="stylesheet" href="/assets/css/views.css">
 </head>
 <body>
+
 <a class="skip-link" href="#main">Skip to content</a>
 
-<header class="topbar">
-  <a class="brand" href="/" data-link>
-    <span class="brand__mark" aria-hidden="true">♠</span>
-    <span class="brand__name">Casino</span>
-  </a>
+<header class="app-header">
+  <div class="app-header__inner">
+    <a class="brand" href="/" data-link aria-label="AURUM home">
+      <img class="brand__logo" src="/assets/brand/aurum-logo.svg" alt="AURUM" width="152" height="36">
+    </a>
 
-  <nav class="topbar__nav" aria-label="Primary">
-    <a href="/" data-link data-nav="lobby">Lobby</a>
-    <a href="/slots" data-link data-nav="slots">Slots</a>
-    <a href="/tables" data-link data-nav="tables">Tables</a>
-    <a href="/history" data-link data-nav="history" data-requires-auth hidden>History</a>
-    <a href="/admin" data-link data-nav="admin" data-requires-admin hidden>Admin</a>
-  </nav>
+    <nav class="app-nav" aria-label="Primary">
+      <a href="/" data-link data-nav="lobby">Lobby</a>
+      <a href="/slots" data-link data-nav="slots">Slots</a>
+      <a href="/tables" data-link data-nav="tables">Tables</a>
+      <a href="/roulette" data-link data-nav="roulette">Roulette</a>
+      <a href="/history" data-link data-nav="history" data-requires-auth hidden>My play</a>
+      <a href="/admin" data-link data-nav="admin" data-requires-admin hidden>Admin</a>
+    </nav>
 
-  <div class="topbar__account">
-    <span class="balance" data-balance hidden aria-live="polite">
-      <span class="balance__label">Balance</span>
-      <strong class="balance__value">—</strong>
-    </span>
-    <span class="who" data-who hidden></span>
-    <button type="button" class="btn btn--ghost" data-action="open-login" data-when="anonymous">Sign in</button>
-    <button type="button" class="btn btn--ghost" data-action="logout" data-when="authenticated" hidden>Sign out</button>
+    <div class="app-header__account">
+      <button class="balance-chip" type="button" data-balance data-action="open-account" hidden
+              aria-label="Open your account">
+        <span class="balance-chip__label">Credits</span>
+        <strong class="balance__value">—</strong>
+      </button>
+      <button class="btn btn--gold btn--sm" type="button" data-action="open-login" data-when="anonymous">Log in</button>
+      <button class="btn btn--outline-gold btn--sm" type="button" data-action="open-register" data-when="anonymous">Register</button>
+      <button class="icon-btn" type="button" data-action="open-menu" aria-label="Open menu" aria-expanded="false" aria-controls="menu-drawer">
+        <span data-icon="menu"></span>
+      </button>
+    </div>
   </div>
 </header>
 
 <main id="main" class="app" data-view="lobby" aria-live="polite"></main>
 
-<footer class="footer">
-  <p>
-    Virtual credits only. No deposits, no withdrawals, no real-money play.
-    Every outcome is produced by the server; the browser never decides a result.
-  </p>
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div class="site-footer__brand">
+      <img src="/assets/brand/aurum-mark.svg" alt="" width="28" height="28">
+      <span>AURUM</span>
+    </div>
+    <p>
+      <strong>Virtual credits only.</strong> No deposits, no withdrawals, no purchases and no real-money play.
+      Every outcome is produced by the server; the browser never decides a result.
+    </p>
+    <p class="site-footer__fine">
+      AURUM is the player interface of the Universal Casino Game Engine. Game names and mechanics are
+      original engine implementations; this build ships no third-party game artwork.
+    </p>
+  </div>
 </footer>
+
+<nav class="tabbar" aria-label="Main sections">
+  <div class="tabbar__inner">
+    <a class="tab" href="/" data-link data-nav="lobby">
+      <span class="tab__icon" data-icon="home"></span><span class="tab__label">Home</span>
+    </a>
+    <a class="tab" href="/slots" data-link data-nav="slots">
+      <span class="tab__icon" data-icon="grid"></span><span class="tab__label">Games</span>
+    </a>
+    <button class="tab tab--fab" type="button" data-action="open-search" aria-label="Search games">
+      <span class="tab__icon tab__fab" data-icon="search"></span><span class="tab__label">Search</span>
+    </button>
+    <a class="tab" href="/history" data-link data-nav="history" data-auth-tab>
+      <span class="tab__icon" data-icon="wallet"></span><span class="tab__label">Wallet</span>
+    </a>
+    <button class="tab" type="button" data-action="open-account">
+      <span class="tab__icon" data-icon="user"></span><span class="tab__label">Account</span>
+    </button>
+  </div>
+</nav>
 
 <div class="toasts" data-toasts aria-live="assertive" aria-atomic="false"></div>
 
-<!-- Sign-in dialog. A native <dialog> so focus handling and Esc come for free. -->
-<dialog class="modal" data-modal="login">
-  <form method="dialog" class="modal__panel" data-form="login">
-    <h2 class="modal__title">Sign in</h2>
-    <p class="modal__hint">Use a player account to play. New here? Register a username below.</p>
+<!-- ============================================================== sign in -->
+<dialog class="modal auth" data-modal="login" aria-labelledby="login-title">
+  <form method="dialog" class="auth__panel" data-form="login" novalidate>
+    <div class="auth__head">
+      <button class="auth__close" type="button" data-action="close-modal" aria-label="Close sign in">
+        <span data-icon="close"></span>
+      </button>
+      <img class="auth__logo" src="/assets/brand/aurum-logo.svg" alt="AURUM" width="140" height="33">
+      <h2 id="login-title">Welcome back</h2>
+      <p>Sign in to play with your virtual credits.</p>
+    </div>
 
-    <label class="field">
-      <span class="field__label">Username</span>
-      <input class="field__input" name="username" autocomplete="username" required
-             pattern="[A-Za-z0-9._-]{3,64}" minlength="3" maxlength="64">
-    </label>
+    <div class="auth__body">
+      <label class="field">
+        <span class="field__label">Username</span>
+        <input class="field__input" name="username" autocomplete="username" required
+               pattern="[A-Za-z0-9._\-]{3,64}" minlength="3" maxlength="64"
+               aria-describedby="login-error" placeholder="Your username">
+      </label>
 
-    <label class="field">
-      <span class="field__label">Password</span>
-      <input class="field__input" name="password" type="password"
-             autocomplete="current-password" minlength="10" required>
-    </label>
+      <label class="field">
+        <span class="field__label">Password</span>
+        <span class="field__with-action">
+          <input class="field__input" name="password" type="password" autocomplete="current-password"
+                 minlength="10" required aria-describedby="login-error" placeholder="Your password">
+          <button class="field__action" type="button" data-action="toggle-password" aria-label="Show password"
+                  aria-pressed="false"><span data-icon="eye"></span></button>
+        </span>
+      </label>
 
-    <p class="modal__error" data-error hidden role="alert"></p>
+      <div class="auth__row">
+        <label class="check">
+          <input type="checkbox" name="remember" checked>
+          <span>Keep me signed in</span>
+        </label>
+        <button class="linklike" type="button" data-action="forgot-password">Forgot password?</button>
+      </div>
 
-    <div class="modal__actions">
-      <button type="button" class="btn btn--ghost" data-action="close-modal">Cancel</button>
-      <button type="submit" class="btn btn--primary" data-submit="login">Sign in</button>
+      <p class="form-error" id="login-error" data-error hidden role="alert"></p>
+
+      <button class="btn btn--gold btn--block btn--lg" type="submit" data-submit="login">Log in</button>
+
+      <p class="auth__alt">New to AURUM?
+        <button class="linklike" type="button" data-action="open-register">Create an account</button>
+      </p>
+      <p class="auth__note">Virtual credits only — there is nothing to deposit and nothing to withdraw.</p>
     </div>
   </form>
+</dialog>
+
+<!-- ============================================================= register -->
+<dialog class="modal auth" data-modal="register" aria-labelledby="register-title">
+  <form method="dialog" class="auth__panel" data-form="register" novalidate>
+    <div class="auth__head">
+      <button class="auth__close" type="button" data-action="close-modal" aria-label="Close registration">
+        <span data-icon="close"></span>
+      </button>
+      <img class="auth__logo" src="/assets/brand/aurum-logo.svg" alt="AURUM" width="140" height="33">
+      <h2 id="register-title">Create your account</h2>
+      <p>A new account starts with 1,000.00 in virtual credits.</p>
+    </div>
+
+    <div class="auth__body">
+      <label class="field">
+        <span class="field__label">Username</span>
+        <input class="field__input" name="username" autocomplete="username" required
+               pattern="[A-Za-z0-9._\-]{3,64}" minlength="3" maxlength="64"
+               aria-describedby="register-hint register-error" placeholder="3–64 letters, digits, . _ -">
+      </label>
+      <p class="field__hint" id="register-hint">This is what you sign in with. It cannot be changed later.</p>
+
+      <label class="field">
+        <span class="field__label">Display name <span class="field__optional">(optional)</span></span>
+        <input class="field__input" name="display_name" maxlength="64" autocomplete="nickname"
+               placeholder="How your name appears in the lobby">
+      </label>
+
+      <label class="field">
+        <span class="field__label">Password</span>
+        <span class="field__with-action">
+          <input class="field__input" name="password" type="password" autocomplete="new-password"
+                 minlength="10" maxlength="128" required aria-describedby="register-hint-2 register-error"
+                 placeholder="At least 10 characters">
+          <button class="field__action" type="button" data-action="toggle-password" aria-label="Show password"
+                  aria-pressed="false"><span data-icon="eye"></span></button>
+        </span>
+      </label>
+      <div class="strength" data-strength data-score="0" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <p class="field__hint" id="register-hint-2" data-strength-label>Use 10 or more characters.</p>
+
+      <label class="field">
+        <span class="field__label">Confirm password</span>
+        <input class="field__input" name="password_confirmation" type="password" autocomplete="new-password"
+               minlength="10" required aria-describedby="register-error" placeholder="Type it again">
+      </label>
+
+      <label class="check check--block">
+        <input type="checkbox" name="terms" required>
+        <span>I understand this is a <strong>virtual-credit</strong> game. There are no deposits, withdrawals or real-money prizes.</span>
+      </label>
+
+      <p class="form-error" id="register-error" data-error hidden role="alert"></p>
+
+      <button class="btn btn--gold btn--block btn--lg" type="submit" data-submit="register">Create account</button>
+
+      <p class="auth__alt">Already registered?
+        <button class="linklike" type="button" data-action="open-login">Log in</button>
+      </p>
+    </div>
+  </form>
+</dialog>
+
+<!-- ======================================================= password help -->
+<dialog class="modal info-modal" data-modal="forgot" aria-labelledby="forgot-title">
+  <div class="info-modal__panel">
+    <div class="info-modal__icon" data-icon="key"></div>
+    <h2 id="forgot-title">Password resets</h2>
+    <p>
+      This deployment has no self-service email reset: accounts are created locally and the engine
+      stores no email address. Ask the operator to reset the password with
+      <code>user:create</code> (or to re-issue credentials) and then sign in again.
+    </p>
+    <p class="muted">Your virtual balance and play history are kept on the account.</p>
+    <button class="btn btn--primary btn--block" type="button" data-action="close-modal">Back to sign in</button>
+  </div>
+</dialog>
+
+<!-- ========================================================== account -->
+<dialog class="modal account" data-modal="account" aria-labelledby="account-title">
+  <div class="account__panel">
+    <div class="account__head">
+      <span class="avatar" data-account-avatar aria-hidden="true">A</span>
+      <div>
+        <h2 id="account-title" data-account-name>Guest</h2>
+        <p data-account-sub>Not signed in</p>
+      </div>
+      <button class="auth__close" type="button" data-action="close-modal" aria-label="Close account">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+
+    <div class="account__balance">
+      <span>Virtual balance</span>
+      <strong data-account-balance>—</strong>
+      <small>Credits only. Never redeemable for money.</small>
+    </div>
+
+    <div class="account__links" data-account-links hidden>
+      <a href="/history" data-link data-action="close-modal"><span data-icon="wallet"></span> My play &amp; wallet</a>
+      <a href="/admin" data-link data-action="close-modal" data-requires-admin hidden><span data-icon="shield"></span> Administrator panel</a>
+    </div>
+
+    <div class="account__actions">
+      <button class="btn btn--ghost btn--block" type="button" data-action="toggle-sound">
+        <span data-icon="sound"></span> <span data-sound-label>Sound on</span>
+      </button>
+      <button class="btn btn--gold btn--block" type="button" data-action="open-login" data-when="anonymous">Log in</button>
+      <button class="btn btn--danger btn--block" type="button" data-action="logout" data-when="authenticated" hidden>Sign out</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ========================================================== search -->
+<dialog class="modal search-sheet" data-modal="search" aria-labelledby="search-title">
+  <div class="search-sheet__panel">
+    <div class="search-sheet__bar">
+      <span data-icon="search"></span>
+      <input type="search" data-search-input placeholder="Search games or providers"
+             aria-label="Search games or providers" autocomplete="off">
+      <button class="icon-btn icon-btn--plain" type="button" data-action="close-modal" aria-label="Close search">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <h2 class="sr-only" id="search-title">Search games</h2>
+    <div class="search-sheet__body" data-search-results>
+      <p class="muted">Start typing to search the catalogue.</p>
+    </div>
+  </div>
+</dialog>
+
+<!-- ========================================================== menu drawer -->
+<dialog class="modal drawer" id="menu-drawer" data-modal="menu" aria-labelledby="drawer-title">
+  <div class="drawer__panel">
+    <div class="drawer__head">
+      <img src="/assets/brand/aurum-logo.svg" alt="AURUM" width="132" height="31">
+      <button class="auth__close" type="button" data-action="close-modal" aria-label="Close menu">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <h2 class="sr-only" id="drawer-title">Menu</h2>
+    <nav class="drawer__nav" aria-label="Menu">
+      <a href="/" data-link data-action="close-modal"><span data-icon="home"></span> Lobby</a>
+      <a href="/slots" data-link data-action="close-modal"><span data-icon="slots"></span> Slots</a>
+      <a href="/tables" data-link data-action="close-modal"><span data-icon="cards"></span> Table games</a>
+      <a href="/roulette" data-link data-action="close-modal"><span data-icon="wheel"></span> Roulette</a>
+      <a href="/history" data-link data-action="close-modal"><span data-icon="wallet"></span> My play</a>
+      <a href="/admin" data-link data-action="close-modal" data-requires-admin hidden><span data-icon="shield"></span> Administration</a>
+    </nav>
+    <div class="drawer__foot">
+      <p><strong data-catalogue-count>22</strong> games registered in the engine.</p>
+      <p class="muted">Server-settled outcomes. Virtual credits only.</p>
+      <button class="btn btn--ghost btn--block" type="button" data-action="toggle-sound">
+        <span data-icon="sound"></span> <span data-sound-label>Sound on</span>
+      </button>
+    </div>
+  </div>
 </dialog>
 
 <script type="module" src="/assets/js/app.js"></script>

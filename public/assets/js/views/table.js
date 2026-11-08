@@ -7,6 +7,7 @@
 
 import { renderBlackjack } from './blackjack.js';
 import { renderRoulette } from './roulette.js';
+import { renderCoinflip } from './coinflip.js';
 import { errorState } from '../lib/ui.js';
 
 export async function renderTable(context, presentation = null) {
@@ -23,6 +24,14 @@ export async function renderTable(context, presentation = null) {
 
   if (context.isStale()) {
     return { node: document.createElement('div') };
+  }
+
+  // Coin Flip is registered under the `card` category because it is a
+  // single-action card game, but it is not blackjack. Dispatch on the module
+  // id/tags before the category so it gets its own interface.
+  const tags = payload.game?.tags || [];
+  if (payload.game?.id === 'coinflip.heads-tails' || tags.includes('example')) {
+    return renderCoinflip(context, payload);
   }
 
   switch (payload.category) {

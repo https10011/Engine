@@ -5,13 +5,17 @@
 // lives on the server, and the only thing this store does is remember who is
 // signed in between page views.
 //
-// The token lives in localStorage rather than a cookie on purpose: the API
+// The token lives in storage rather than a cookie on purpose: the API
 // authenticates with an `Authorization: Bearer` header, so a cross-site
 // request cannot carry it implicitly and there is no CSRF surface for the
 // token itself.
+//
+// "Keep me signed in" chooses between localStorage (survives closing the
+// browser) and sessionStorage (cleared when the tab closes). Both are cleared
+// on sign-out and on a 401.
 
-const TOKEN_KEY = 'casino.token';
-const USER_KEY = 'casino.user';
+const TOKEN_KEY = 'aurum.token';
+const USER_KEY = 'aurum.user';
 
 let token = null;
 let user = null;
@@ -36,10 +40,18 @@ export function isAdmin() {
   return Boolean(user && user.role === 'admin');
 }
 
+function read(key) {
+  try {
+    return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export function load() {
   try {
-    token = localStorage.getItem(TOKEN_KEY) || null;
-    const raw = localStorage.getItem(USER_KEY);
+    token = read(TOKEN_KEY);
+    const raw = read(USER_KEY);
     user = raw ? JSON.parse(raw) : null;
   } catch {
     token = null;
@@ -48,17 +60,22 @@ export function load() {
   notify();
 }
 
-export function setSession(nextToken, nextUser, nextBalance) {
+export function setSession(nextToken, nextUser, nextBalance, { remember = true } = {}) {
   token = nextToken || null;
   user = nextUser || null;
   if (nextBalance !== undefined) balance = nextBalance;
 
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
 
-    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-    else localStorage.removeItem(USER_KEY);
+    if (token) {
+      const store = remember ? localStorage : sessionStorage;
+      store.setItem(TOKEN_KEY, token);
+      if (user) store.setItem(USER_KEY, JSON.stringify(user));
+    }
   } catch {
     // Private browsing with storage disabled: stay usable for this tab only.
   }

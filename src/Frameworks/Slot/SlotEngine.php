@@ -13,6 +13,7 @@ use CasinoEngine\Frameworks\Slot\Evaluation\GridEvaluatorInterface;
 use CasinoEngine\Frameworks\Slot\Feature\FeatureContext;
 use CasinoEngine\Frameworks\Slot\Feature\FeatureInterface;
 use CasinoEngine\Frameworks\Slot\Feature\SpinLifecycleInterface;
+use CasinoEngine\Frameworks\Slot\Feature\SpinMultiplierInterface;
 use CasinoEngine\Frameworks\Slot\Grid\Grid;
 use CasinoEngine\Frameworks\Slot\Paytable\Paytable;
 use CasinoEngine\Frameworks\Slot\Reel\ReelConfiguration;
@@ -108,6 +109,13 @@ final class SlotEngine
         $totalUnits = 0;
         $highestMultiplier = 1;
 
+        // Spin-scoped multipliers (a collected symbol multiplier) are gathered
+        // here and applied once, at the end, to the spin's whole total. A
+        // step-scoped multiplier (a tumble ladder) is applied to its own step
+        // inside the loop. Conflating the two would pay an accumulated x50 once
+        // per cascade instead of once per spin.
+        $spinMultipliers = [];
+
         // Feature states are tracked per feature so a cascade loop advances a
         // feature without discarding the others' progress. A feature that owns
         // per-spin state gets a chance to reset it before the first evaluation;
@@ -167,6 +175,13 @@ final class SlotEngine
                     $evaluationMultiplier = $step->multiplier;
                 }
 
+                if ($feature instanceof SpinMultiplierInterface) {
+                    $spinMultipliers[$type] = $feature->spinMultiplier(
+                        $step->multiplier,
+                        $spinMultipliers[$type] ?? 1
+                    );
+                }
+
                 if ($step->grid !== null) {
                     // A feature that hands back a new grid is asking for that
                     // grid to be evaluated. The new grid becomes the working
@@ -189,8 +204,31 @@ final class SlotEngine
 
         $finalEvaluation = $evaluations[count($evaluations) - 1] ?? EvaluationResult::empty();
 
+        // Apply the spin-scoped multipliers once, to the whole total.
+        $spinMultiplier = 1;
+        foreach ($this->features as $feature) {
+            if (!$feature instanceof SpinMultiplierInterface) {
+                continue;
+            }
+            $type = $feature->type();
+            $value = max(1, $spinMultipliers[$type] ?? 1);
+            if ($value <= 1) {
+                continue;
+            }
+            $spinMultiplier *= $value;
+            $highestMultiplier = max($highestMultiplier, $value);
+
+            $transition = $feature->spinMultiplierTransition($value);
+            if ($transition !== null) {
+                $transitions[] = $transition;
+            }
+        }
+
+        $totalUnits *= $spinMultiplier;
+
         // Every evaluation's units were already multiplied by that cascade's
-        // own ladder step, so the total is the spin's payout in units.
+        // own ladder step, and the spin-scoped multiplier has now been applied
+        // to the total, so the result is the spin's payout in units.
         $payoutMultiplier = $this->unitsToMultiplier($totalUnits);
 
         $nextState = $state->withFeatures($pending, $grid->cells(), $state->spinsPlayed() + 1);

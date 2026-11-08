@@ -23,8 +23,11 @@ use CasinoEngine\Frameworks\Slot\Symbol\SymbolType;
  * simply has no entry for it, so the evaluator skips it. This feature reads its
  * positions from the grid and draws a value from the configured ladder.
  */
-final class SymbolMultiplierFeature implements FeatureInterface, SpinLifecycleInterface
+final class SymbolMultiplierFeature implements FeatureInterface, SpinLifecycleInterface, SpinMultiplierInterface
 {
+    /** @var array<string, mixed> */
+    private array $lastState = [];
+
     /**
      * @param list<int> $values Multiplier values the symbol may carry
      */
@@ -103,32 +106,70 @@ final class SymbolMultiplierFeature implements FeatureInterface, SpinLifecycleIn
         }
 
         if ($this->roundScoped) {
-            // The value is added to the round's running total and applied to any
-            // win this step produces.
+            // Round-scoped: the value joins the round's running total and is
+            // applied to any win the round produces. The total survives between
+            // free spins, so it is carried in the state.
             $accumulated += $sequence;
-            $applied = $context->evaluation->isWin() ? max(1, $accumulated) : 1;
-
-            return new FeatureStep(
-                ['accumulated' => $accumulated, 'sequence' => 0, 'drawn' => array_keys($drawnPositions)],
-                null,
-                $applied,
-                false,
-                $transitions,
-                ['applied' => $applied, 'accumulated' => $accumulated]
-            );
+            $next = ['accumulated' => $accumulated, 'sequence' => 0, 'drawn' => array_keys($drawnPositions)];
+        } else {
+            // Sequence-scoped: the values collected across the tumble sequence
+            // are summed and applied once, to the whole sequence's win.
+            $next = ['sequence' => $sequence, 'accumulated' => 0, 'drawn' => array_keys($drawnPositions)];
         }
 
-        // Sequence-scoped: the values collected across the tumble sequence are
-        // summed and applied to the sequence's win once.
-        $applied = $sequence > 0 ? max(1, $sequence) : 1;
+        // The engine asks for the spin's total multiplier after the cascade
+        // loop has finished, so the last state the feature produced is the one
+        // that carries the value to apply.
+        $this->lastState = $next;
 
         return new FeatureStep(
-            ['sequence' => $sequence, 'accumulated' => 0, 'drawn' => array_keys($drawnPositions)],
+            $next,
             null,
-            $applied,
+            1,
             false,
             $transitions,
-            ['applied' => $applied, 'sequence' => $sequence]
+            ['sequence' => $sequence, 'accumulated' => $accumulated]
+        );
+    }
+
+    /**
+     * The collected multiplier, applied once to the spin's total.
+     *
+     * It is reported to the engine rather than returned as a step multiplier
+     * because a step multiplier would be applied to every cascade step: a
+     * sequence that collected x50 across five steps would pay x50 five times.
+     */
+    public function spinMultiplier(int $reported, int $current): int
+    {
+        $state = $this->lastState;
+        $value = $this->roundScoped
+            ? (int) ($state['accumulated'] ?? 0)
+            : (int) ($state['sequence'] ?? 0);
+
+        return max($current, $value);
+    }
+
+    /**
+     * Announces the multiplier the spin actually used.
+     *
+     * Only a multiplier above 1 is announced, so a spin with no multiplier
+     * symbol carries no misleading transition in its history.
+     */
+    public function spinMultiplierTransition(int $applied): ?FeatureTransition
+    {
+        if ($applied <= 1) {
+            return null;
+        }
+
+        return new FeatureTransition(
+            $this->type(),
+            FeatureTransition::UPDATED,
+            $applied,
+            [
+                'applied'      => $applied,
+                'scope'        => $this->roundScoped ? 'round' : 'sequence',
+                'applied_once' => true,
+            ]
         );
     }
 

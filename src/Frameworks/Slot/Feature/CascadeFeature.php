@@ -46,7 +46,8 @@ final class CascadeFeature implements FeatureInterface
         private readonly string $refillStrategy = 'reel_strip',
         private readonly array $leavesWild = [],
         private readonly ?string $leavesWildSymbol = null,
-        private readonly float $leavesWildProbability = 1.0
+        private readonly float $leavesWildProbability = 1.0,
+        private readonly bool $keepScatters = false
     ) {
         if (!in_array($refillStrategy, self::REFILL_STRATEGIES, true)) {
             throw new ConfigurationException(sprintf(
@@ -117,6 +118,19 @@ final class CascadeFeature implements FeatureInterface
     }
 
     /**
+     * Positions removed by a cascade.
+     *
+     * Every position that has just been *paid* is removed, including scatters.
+     * A cascade re-evaluates the grid, so a winning position that stayed put
+     * would be paid again on the next step — the same scatter landing three
+     * times would pay three times. Removing what was paid is the invariant that
+     * makes a cascade chain a sequence of distinct wins rather than one win
+     * counted repeatedly.
+     *
+     * `$keepScatters` exists for a game whose scatter is deliberately
+     * persistent, and is off by default because the double-payment it causes is
+     * almost never intended.
+     *
      * @param list<\CasinoEngine\Frameworks\Slot\Evaluation\WinLine> $wins
      * @return list<array{0:int,1:int}>
      */
@@ -124,9 +138,7 @@ final class CascadeFeature implements FeatureInterface
     {
         $positions = [];
         foreach ($wins as $win) {
-            if ($win->kind === 'scatter') {
-                // Scatters pay anywhere but are not removed by a cascade; a
-                // scatter that vanished would break its own trigger.
+            if ($win->kind === 'scatter' && $this->keepScatters) {
                 continue;
             }
             foreach ($win->positions as $position) {

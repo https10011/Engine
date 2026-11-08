@@ -19,7 +19,7 @@ use CasinoEngine\Core\Contract\FeatureTransition;
  * The award table maps scatter count to spins. A count below the table's
  * minimum triggers nothing.
  */
-final class FreeSpinsFeature implements FeatureInterface
+final class FreeSpinsFeature implements FeatureInterface, SpinLifecycleInterface
 {
     /**
      * @param array<int, int> $awardTable scatter count => spins awarded
@@ -36,9 +36,36 @@ final class FreeSpinsFeature implements FeatureInterface
         return 'free_spins';
     }
 
+    /**
+     * Marks the spin as not yet accounted for.
+     *
+     * A cascade chain evaluates the same grid many times, and a scatter is
+     * never removed by a cascade — it does not form a line, so it stays where
+     * it landed. Without this guard the feature would award or consume spins
+     * once per cascade step, so a single grid holding three scatters would
+     * retrigger several times and the free-spin pool would balloon. The pool is
+     * a property of the *spin*, so it is settled on the spin's first step and
+     * left alone afterwards.
+     *
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    public function onSpinStart(array $state): array
+    {
+        $state['processed'] = false;
+
+        return $state;
+    }
+
     public function apply(FeatureContext $context): FeatureStep
     {
         $state = $context->state;
+
+        if (($state['processed'] ?? false) === true) {
+            return new FeatureStep($state, null, 1, false, [], []);
+        }
+
+        $state['processed'] = true;
         $transitions = [];
 
         // A free spin is a spin of its own, consumed by the *next* action, not
@@ -71,7 +98,7 @@ final class FreeSpinsFeature implements FeatureInterface
                 : new FeatureTransition($this->type(), FeatureTransition::ENDED, 0);
 
             return new FeatureStep(
-                ['remaining' => $remaining, 'awarded' => $awarded],
+                ['remaining' => $remaining, 'awarded' => $awarded, 'processed' => true],
                 null,
                 1,
                 false,
@@ -86,7 +113,7 @@ final class FreeSpinsFeature implements FeatureInterface
             $remaining = min($award, $this->retriggerCap);
 
             return new FeatureStep(
-                ['remaining' => $remaining, 'awarded' => $remaining],
+                ['remaining' => $remaining, 'awarded' => $remaining, 'processed' => true],
                 null,
                 1,
                 false,
@@ -100,7 +127,7 @@ final class FreeSpinsFeature implements FeatureInterface
             );
         }
 
-        return FeatureStep::idle(['remaining' => 0, 'awarded' => 0]);
+        return new FeatureStep(['remaining' => 0, 'awarded' => 0, 'processed' => true]);
     }
 
     private function awardFor(int $scatterCount): int

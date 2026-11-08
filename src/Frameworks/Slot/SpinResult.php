@@ -35,6 +35,35 @@ final class SpinResult
         return $this->payoutMultiplier->numerator() > 0;
     }
 
+    /**
+     * True when a jackpot roll succeeded during this spin.
+     *
+     * Read from the feature transitions rather than from the payout, because a
+     * jackpot is a distinct event: an ordinary win and a jackpot trigger must
+     * be reportable separately, which is what the directive requires.
+     */
+    public function hasJackpot(): bool
+    {
+        return $this->jackpotTier() !== null;
+    }
+
+    public function jackpotTier(): ?string
+    {
+        foreach ($this->transitions as $transition) {
+            if ($transition->type !== 'jackpot') {
+                continue;
+            }
+            if ($transition->status !== \CasinoEngine\Core\Contract\FeatureTransition::STARTED) {
+                continue;
+            }
+            $tier = $transition->detail['tier'] ?? null;
+
+            return is_string($tier) ? $tier : 'default';
+        }
+
+        return null;
+    }
+
     public function cascadeCount(): int
     {
         return max(0, count($this->evaluations) - 1);

@@ -34,3 +34,7 @@ Thumbs.db
 /storage/*.log
 /storage/*.pid
 /htdocs/.env
+
+# Real database credentials (committed template: config/database.local.example.php)
+/config/database.local.php
+/htdocs/config/database.local.php

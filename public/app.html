@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#083326">
-<title>AURUM — Virtual Casino</title>
-<meta name="description" content="AURUM is a virtual-credit casino powered by the Universal Casino Game Engine. Every outcome is settled by the server. No deposits, no withdrawals, no real money.">
+<title>AURUM — Casino</title>
+<meta name="description" content="AURUM is a private casino lobby for you and your friends. Sign in with your phone number, take a seat and play.">
 <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/brand/app-icon.svg">
 <link rel="stylesheet" href="/assets/css/app.css">
@@ -30,7 +30,7 @@
       <a href="/tables" data-link data-nav="tables">Tables</a>
       <a href="/roulette" data-link data-nav="roulette">Roulette</a>
       <a href="/history" data-link data-nav="history" data-requires-auth hidden>My play</a>
-      <a href="/admin" data-link data-nav="admin" data-requires-admin hidden>Admin</a>
+      <a href="admin.php" data-nav="admin" data-requires-admin hidden>Admin</a>
     </nav>
 
     <div class="app-header__account">
@@ -57,13 +57,10 @@
       <span>AURUM</span>
     </div>
     <p>
-      <strong>Virtual credits only.</strong> No deposits, no withdrawals, no purchases and no real-money play.
-      Every outcome is produced by the server; the browser never decides a result.
+      <strong>Play for the fun of it.</strong> AURUM is a private lobby for friends to play together.
+      Take a seat, enjoy the games and keep it friendly.
     </p>
-    <p class="site-footer__fine">
-      AURUM is the player interface of the Universal Casino Game Engine. Game names and mechanics are
-      original engine implementations; this build ships no third-party game artwork.
-    </p>
+    <p class="site-footer__fine">18+ · Play responsibly.</p>
   </div>
 </footer>
 
@@ -98,15 +95,14 @@
       </button>
       <img class="auth__logo" src="/assets/brand/aurum-logo.svg" alt="AURUM" width="140" height="33">
       <h2 id="login-title">Welcome back</h2>
-      <p>Sign in to play with your virtual credits.</p>
+      <p>Sign in to take your seat.</p>
     </div>
 
     <div class="auth__body">
       <label class="field">
-        <span class="field__label">Username</span>
-        <input class="field__input" name="username" autocomplete="username" required
-               pattern="[A-Za-z0-9._\-]{3,64}" minlength="3" maxlength="64"
-               aria-describedby="login-error" placeholder="Your username">
+        <span class="field__label">Phone number</span>
+        <input class="field__input" name="identifier" type="tel" inputmode="tel" autocomplete="tel" required
+               maxlength="24" aria-describedby="login-error" placeholder="0917 123 4567">
       </label>
 
       <label class="field">
@@ -134,7 +130,18 @@
       <p class="auth__alt">New to AURUM?
         <button class="linklike" type="button" data-action="open-register">Create an account</button>
       </p>
-      <p class="auth__note">Virtual credits only — there is nothing to deposit and nothing to withdraw.</p>
+
+      <div class="auth__divider"><span>or continue with</span></div>
+      <div class="social-row">
+        <button class="social-btn social-btn--google" type="button" data-action="social-login" data-provider="Google">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.56-5.17 3.56-8.65z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.91l-3.87-3c-1.07.72-2.44 1.15-4.07 1.15-3.13 0-5.78-2.11-6.72-4.96H1.29v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.28 14.28a7.2 7.2 0 0 1 0-4.56V6.63H1.29a12 12 0 0 0 0 10.74l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.29 6.63l3.99 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          <span>Continue with Google</span>
+        </button>
+        <button class="social-btn social-btn--facebook" type="button" data-action="social-login" data-provider="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+          <span>Continue with Facebook</span>
+        </button>
+      </div>
     </div>
   </form>
 </dialog>
@@ -148,53 +155,86 @@
       </button>
       <img class="auth__logo" src="/assets/brand/aurum-logo.svg" alt="AURUM" width="140" height="33">
       <h2 id="register-title">Create your account</h2>
-      <p>A new account starts with 1,000.00 in virtual credits.</p>
+      <p>Your first seat comes with 300 credits.</p>
     </div>
 
     <div class="auth__body">
-      <label class="field">
-        <span class="field__label">Username</span>
-        <input class="field__input" name="username" autocomplete="username" required
-               pattern="[A-Za-z0-9._\-]{3,64}" minlength="3" maxlength="64"
-               aria-describedby="register-hint register-error" placeholder="3–64 letters, digits, . _ -">
-      </label>
-      <p class="field__hint" id="register-hint">This is what you sign in with. It cannot be changed later.</p>
+      <div data-register-details>
+        <label class="field">
+          <span class="field__label">Phone number</span>
+          <input class="field__input" name="phone" type="tel" inputmode="tel" autocomplete="tel" required
+                 maxlength="24" aria-describedby="register-hint register-error" placeholder="0917 123 4567">
+        </label>
+        <p class="field__hint" id="register-hint">This is the number you will use to sign in. It is only shown to you and the host.</p>
 
-      <label class="field">
-        <span class="field__label">Display name <span class="field__optional">(optional)</span></span>
-        <input class="field__input" name="display_name" maxlength="64" autocomplete="nickname"
-               placeholder="How your name appears in the lobby">
-      </label>
+        <label class="field">
+          <span class="field__label">Display name</span>
+          <input class="field__input" name="display_name" maxlength="64" minlength="2" autocomplete="nickname"
+                 required placeholder="How your name appears at the table">
+        </label>
 
-      <label class="field">
-        <span class="field__label">Password</span>
-        <span class="field__with-action">
-          <input class="field__input" name="password" type="password" autocomplete="new-password"
-                 minlength="10" maxlength="128" required aria-describedby="register-hint-2 register-error"
-                 placeholder="At least 10 characters">
-          <button class="field__action" type="button" data-action="toggle-password" aria-label="Show password"
-                  aria-pressed="false"><span data-icon="eye"></span></button>
-        </span>
-      </label>
-      <div class="strength" data-strength data-score="0" aria-hidden="true">
-        <span></span><span></span><span></span><span></span>
+        <label class="field">
+          <span class="field__label">Age</span>
+          <input class="field__input" name="age" type="number" inputmode="numeric" min="18" max="120" required
+                 autocomplete="bday-year" placeholder="18 or older">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Password</span>
+          <span class="field__with-action">
+            <input class="field__input" name="password" type="password" autocomplete="new-password"
+                   minlength="10" maxlength="128" required aria-describedby="register-hint-2 register-error"
+                   placeholder="At least 10 characters">
+            <button class="field__action" type="button" data-action="toggle-password" aria-label="Show password"
+                    aria-pressed="false"><span data-icon="eye"></span></button>
+          </span>
+        </label>
+        <div class="strength" data-strength data-score="0" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <p class="field__hint" id="register-hint-2" data-strength-label>Use 10 or more characters.</p>
+
+        <label class="field">
+          <span class="field__label">Confirm password</span>
+          <input class="field__input" name="password_confirmation" type="password" autocomplete="new-password"
+                 minlength="10" required aria-describedby="register-error" placeholder="Type it again">
+        </label>
       </div>
-      <p class="field__hint" id="register-hint-2" data-strength-label>Use 10 or more characters.</p>
 
-      <label class="field">
-        <span class="field__label">Confirm password</span>
-        <input class="field__input" name="password_confirmation" type="password" autocomplete="new-password"
-               minlength="10" required aria-describedby="register-error" placeholder="Type it again">
-      </label>
-
-      <label class="check check--block">
-        <input type="checkbox" name="terms" required>
-        <span>I understand this is a <strong>virtual-credit</strong> game. There are no deposits, withdrawals or real-money prizes.</span>
-      </label>
+      <div class="otp-step" data-register-otp hidden>
+        <div class="otp-step__icon" data-icon="shield"></div>
+        <h3>Enter your verification code</h3>
+        <p class="otp-step__copy">A browser notification shows your demo code. No SMS is sent.</p>
+        <div class="otp-demo-code">
+          <span>Demo code</span>
+          <strong data-otp-code>------</strong>
+        </div>
+        <label class="field">
+          <span class="field__label">Six-digit code</span>
+          <input class="field__input otp-input" name="otp" type="text" inputmode="numeric"
+                 autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6"
+                 placeholder="000000" aria-describedby="otp-hint register-error">
+        </label>
+        <p class="field__hint" id="otp-hint">Any six digits will complete this demo. No SMS is sent and the number is not independently verified.</p>
+        <button class="linklike otp-resend" type="button" data-action="resend-otp">Send a new demo code</button>
+      </div>
 
       <p class="form-error" id="register-error" data-error hidden role="alert"></p>
 
-      <button class="btn btn--gold btn--block btn--lg" type="submit" data-submit="register">Create account</button>
+      <button class="btn btn--gold btn--block btn--lg" type="submit" data-submit="register">Continue</button>
+      <button class="btn btn--ghost btn--block otp-back" type="button" data-action="register-back" hidden>Back to details</button>
+
+      <div class="auth__divider"><span>or continue with</span></div>
+      <div class="social-row">
+        <button class="social-btn social-btn--google" type="button" data-action="social-login" data-provider="Google">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.56-5.17 3.56-8.65z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.91l-3.87-3c-1.07.72-2.44 1.15-4.07 1.15-3.13 0-5.78-2.11-6.72-4.96H1.29v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.28 14.28a7.2 7.2 0 0 1 0-4.56V6.63H1.29a12 12 0 0 0 0 10.74l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.29 6.63l3.99 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          <span>Continue with Google</span>
+        </button>
+        <button class="social-btn social-btn--facebook" type="button" data-action="social-login" data-provider="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+          <span>Continue with Facebook</span>
+        </button>
+      </div>
 
       <p class="auth__alt">Already registered?
         <button class="linklike" type="button" data-action="open-login">Log in</button>
@@ -209,11 +249,9 @@
     <div class="info-modal__icon" data-icon="key"></div>
     <h2 id="forgot-title">Password resets</h2>
     <p>
-      This deployment has no self-service email reset: accounts are created locally and the engine
-      stores no email address. Ask the operator to reset the password with
-      <code>user:create</code> (or to re-issue credentials) and then sign in again.
+      Ask the host to reset your password, then sign in again with your phone number.
     </p>
-    <p class="muted">Your virtual balance and play history are kept on the account.</p>
+    <p class="muted">Your balance and play history stay on your account.</p>
     <button class="btn btn--primary btn--block" type="button" data-action="close-modal">Back to sign in</button>
   </div>
 </dialog>
@@ -233,14 +271,14 @@
     </div>
 
     <div class="account__balance">
-      <span>Virtual balance</span>
+      <span>Credits</span>
       <strong data-account-balance>—</strong>
-      <small>Credits only. Never redeemable for money.</small>
+      <small>Ready for your next game.</small>
     </div>
 
     <div class="account__links" data-account-links hidden>
       <a href="/history" data-link data-action="close-modal"><span data-icon="wallet"></span> My play &amp; wallet</a>
-      <a href="/admin" data-link data-action="close-modal" data-requires-admin hidden><span data-icon="shield"></span> Administrator panel</a>
+      <a href="admin.php" data-action="close-modal" data-requires-admin hidden><span data-icon="shield"></span> Administrator panel</a>
     </div>
 
     <div class="account__actions">
@@ -287,11 +325,11 @@
       <a href="/tables" data-link data-action="close-modal"><span data-icon="cards"></span> Table games</a>
       <a href="/roulette" data-link data-action="close-modal"><span data-icon="wheel"></span> Roulette</a>
       <a href="/history" data-link data-action="close-modal"><span data-icon="wallet"></span> My play</a>
-      <a href="/admin" data-link data-action="close-modal" data-requires-admin hidden><span data-icon="shield"></span> Administration</a>
+      <a href="admin.php" data-action="close-modal" data-requires-admin hidden><span data-icon="shield"></span> Administration</a>
     </nav>
     <div class="drawer__foot">
-      <p><strong data-catalogue-count>22</strong> games registered in the engine.</p>
-      <p class="muted">Server-settled outcomes. Virtual credits only.</p>
+      <p><strong data-catalogue-count>22</strong> games in the lobby.</p>
+      <p class="muted">Pick a game and take your seat.</p>
       <button class="btn btn--ghost btn--block" type="button" data-action="toggle-sound">
         <span data-icon="sound"></span> <span data-sound-label>Sound on</span>
       </button>

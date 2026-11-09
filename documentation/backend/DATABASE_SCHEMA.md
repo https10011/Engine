@@ -31,14 +31,18 @@ are `CREATE TABLE IF NOT EXISTS`, which makes re-running safe; a future
 
 ### Identity
 
-**`users`** — one row per person. The project is private; the CLI creates the
-owner account rather than exposing public registration.
+**`users`** — one row per person. Players self-register with a phone number;
+`username` remains an internal unique key so existing engine/CLI paths keep
+working. The seeded administrator also has a username (`admin`).
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | BIGINT UNSIGNED PK | |
-| `username` | VARCHAR(64) UNIQUE | |
+| `username` | VARCHAR(64) UNIQUE | internal; generated for players |
+| `phone` | VARCHAR(20) NULL, UNIQUE | canonical `+63…`/international form; player login |
 | `display_name` | VARCHAR(128) | |
+| `age` | TINYINT UNSIGNED NULL | 18–120, required by player registration |
+| `role` | ENUM(player, admin) | added by `2026_01_02_000002` |
 | `status` | ENUM(active, suspended, closed) | suspended blocks login |
 | `created_at`, `updated_at` | DATETIME | |
 
@@ -49,7 +53,7 @@ owner account rather than exposing public registration.
 | --- | --- | --- |
 | `user_id` | PK, FK → users ON DELETE CASCADE | |
 | `password_hash` | VARCHAR(255) | Argon2id or bcrypt |
-| `algo` | VARCHAR(32) | matches `security.password_algo` |
+| `algo` | VARCHAR(32) | matches `security.password_algo` (bcrypt for the seeded admin) |
 | `updated_at` | DATETIME | |
 
 **`api_tokens`** — bearer tokens, stored only as a SHA-256 hash. The plaintext
@@ -94,6 +98,16 @@ attempts to record the same logical change collide on the index, and the second
 fails rather than crediting twice.
 
 ### Games, sessions and history
+
+**`game_controls`** — per-game operator switches, independent of odds. A
+missing row means available and not friendly-play, so the table starts empty.
+
+| Column | Notes |
+| --- | --- |
+| `game_id` | PK, matches the code registry |
+| `available` | 0 removes the game from the lobby and refuses new sessions |
+| `friendly_play` | marks a non-default generosity preset in the admin UI |
+| `updated_by`, `updated_at` | last operator and time |
 
 **`games`** — a mirror of the PHP registry, holding operator-controlled
 enablement and JSON configuration overrides. The authoritative game list is

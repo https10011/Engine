@@ -14,6 +14,7 @@ use CasinoEngine\Core\Exception\ValidationException;
 use CasinoEngine\Persistence\Repository\UserRepository;
 use CasinoEngine\Persistence\Repository\WalletRepository;
 use CasinoEngine\Services\Auth\AuthServiceInterface;
+use CasinoEngine\Services\Auth\PhoneNumber;
 use CasinoEngine\Services\Wallet\WalletServiceInterface;
 
 /**
@@ -59,14 +60,22 @@ final class AuthController extends AbstractController
             throw new AuthorizationException('Self-service registration is disabled on this deployment.');
         }
 
-        $username = trim($request->requireString('username'));
+        $phone = PhoneNumber::normalize($request->requireString('phone'));
         $password = $request->requireString('password');
-        $displayName = trim((string) ($request->input('display_name') ?? $username));
+        $displayName = trim($request->requireString('display_name'));
+        $age = $request->input('age');
+        $otp = $request->input('otp');
 
-        if (preg_match('/^[A-Za-z0-9._-]{3,64}$/', $username) !== 1) {
-            throw new ValidationException(
-                'Username must be 3-64 characters of letters, digits, dot, dash or underscore.'
-            );
+        if (!is_int($age) && !(is_string($age) && ctype_digit($age))) {
+            throw new ValidationException('Age must be a whole number.');
+        }
+        $age = (int) $age;
+        if ($age < 18 || $age > 120) {
+            throw new ValidationException('You must be between 18 and 120 years old to register.');
+        }
+
+        if (!is_string($otp) || preg_match('/^\d{6}$/', $otp) !== 1) {
+            throw new ValidationException('Enter the six-digit verification code.');
         }
 
         $length = strlen($password);
@@ -74,24 +83,29 @@ final class AuthController extends AbstractController
             throw new ValidationException('Password must be between 10 and 128 characters.');
         }
 
-        if ($displayName === '') {
-            $displayName = $username;
-        }
-        if (mb_strlen($displayName) > 64) {
-            throw new ValidationException('Display name must be at most 64 characters.');
+        if (mb_strlen($displayName) < 2 || mb_strlen($displayName) > 64) {
+            throw new ValidationException('Display name must be between 2 and 64 characters.');
         }
 
-        if ($this->users->findByUsername($username) !== null) {
-            throw new ValidationException('That username is already taken.');
+        if ($this->users->findByPhone($phone) !== null) {
+            throw new ValidationException('An account with that phone number already exists.');
+        }
+
+        // `username` remains the internal unique key; players never choose or
+        // see it. The phone number is the credential they use to sign in.
+        $username = 'p_' . substr(preg_replace('/\D+/', '', $phone) ?? '', -12)
+            . '_' . bin2hex(random_bytes(3));
+        if (strlen($username) > 64) {
+            $username = substr($username, 0, 64);
         }
 
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
-        // A user without a wallet cannot play, so both rows are written
-        // together or not at all.
+        // A user without a wallet cannot play, so every row is written together
+        // or not at all. The starting balance is granted exactly once, here.
         $this->connection->beginTransaction();
         try {
-            $userId = $this->users->create($username, $displayName, $now);
+            $userId = $this->users->createPlayer($username, $phone, $displayName, $age, $now);
             $this->wallets->createForUser($userId, $this->currency, $this->scale, $this->startingBalanceMinor, $now);
             $this->users->setCredentials(
                 $userId,
@@ -100,6 +114,12 @@ final class AuthController extends AbstractController
                 $now
             );
             $this->connection->commit();
+        } catch (\PDOException $error) {
+            $this->connection->rollBack();
+            if ($error->getCode() === '23000') {
+                throw new ValidationException('An account with that phone number already exists.');
+            }
+            throw $error;
         } catch (\Throwable $error) {
             $this->connection->rollBack();
             throw $error;
@@ -112,7 +132,9 @@ final class AuthController extends AbstractController
             'user' => [
                 'id'           => $userId,
                 'username'     => $username,
+                'phone'        => $phone,
                 'display_name' => $displayName,
+                'age'          => $age,
                 'role'         => (string) ($user['role'] ?? 'player'),
             ],
             'token'      => $token['token'],
@@ -126,8 +148,13 @@ final class AuthController extends AbstractController
      */
     public function login(array $parameters, Request $request, RequestContext $context): Response
     {
+        $identifier = $request->input('identifier');
+        if (!is_string($identifier) || trim($identifier) === '') {
+            $identifier = $request->requireString('username');
+        }
+
         $result = $this->auth->login(
-            $request->requireString('username'),
+            $identifier,
             $request->requireString('password'),
             $request->clientIp()
         );

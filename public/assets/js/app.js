@@ -6,6 +6,7 @@
 // a view calls the API and renders what comes back.
 
 import { el, mount, clear, providerLabel } from './lib/dom.js';
+import { gameArt } from './lib/art.js';
 import { decorateIcons } from './lib/icons.js';
 import { api, ApiError } from './lib/api.js';
 import * as store from './lib/store.js';
@@ -17,7 +18,6 @@ import { renderLobby } from './views/lobby.js';
 import { renderSlot } from './views/slot.js';
 import { renderTable } from './views/table.js';
 import { renderHistory } from './views/history.js';
-import { renderAdmin } from './views/admin.js';
 
 const main = document.querySelector('main[data-view]');
 let currentView = null;
@@ -43,7 +43,6 @@ function parseRoute() {
   }
   if (parts[0] === 'game' && parts[1]) return { name: 'game', id: decodeURIComponent(parts[1]) };
   if (parts[0] === 'history') return { name: 'history' };
-  if (parts[0] === 'admin') return { name: 'admin' };
   return { name: 'notfound', path };
 }
 
@@ -56,21 +55,19 @@ function navKey(route) {
     case 'table': return 'tables';
     case 'roulette': return 'roulette';
     case 'history': return 'history';
-    case 'admin': return 'admin';
     default: return null;
   }
 }
 
 function titleFor(route) {
   const titles = {
-    lobby: 'AURUM — Virtual Casino',
+    lobby: 'AURUM — Casino',
     slots: 'Slots · AURUM',
     slot: 'Slots · AURUM',
     tables: 'Table games · AURUM',
     table: 'Table game · AURUM',
     roulette: 'Roulette · AURUM',
     history: 'My play · AURUM',
-    admin: 'Administration · AURUM',
     notfound: 'Not found · AURUM',
   };
   return titles[route.name] || 'AURUM';
@@ -101,13 +98,8 @@ async function render() {
   currentView = null;
   clear(main);
 
-  const guarded = route.name === 'history' || route.name === 'admin';
-  if (guarded && !store.getToken()) {
+  if (route.name === 'history' && !store.getToken()) {
     mount(main, signInPrompt(route.name));
-    return;
-  }
-  if (route.name === 'admin' && !store.isAdmin()) {
-    mount(main, errorState('The administrator panel is restricted to administrator accounts.', null));
     return;
   }
 
@@ -130,13 +122,12 @@ async function render() {
     table: renderTable,
     game: renderSlot,
     history: renderHistory,
-    admin: renderAdmin,
     notfound: renderNotFound,
   };
 
   document.body.dataset.view = route.name;
 
-  mount(main, route.name === 'history' || route.name === 'admin'
+  mount(main, route.name === 'history'
     ? loadingState(3)
     : lobbySkeleton(route.name));
 
@@ -241,7 +232,7 @@ function openLogin() {
   const form = dialog.querySelector('form');
   form.querySelector('[data-error]').hidden = true;
   showModal('login');
-  setTimeout(() => form.elements.username?.focus(), 40);
+  setTimeout(() => form.elements.identifier?.focus(), 40);
 }
 
 function openRegister() {
@@ -251,9 +242,10 @@ function openRegister() {
   const form = dialog.querySelector('form');
   form.querySelector('[data-error]').hidden = true;
   form.reset();
+  resetRegistrationStep(form);
   updateStrength('');
   showModal('register');
-  setTimeout(() => form.elements.username?.focus(), 40);
+  setTimeout(() => form.elements.phone?.focus(), 40);
 }
 
 /* --------------------------------------------------------------- signing in */
@@ -281,15 +273,15 @@ async function submitLogin(event) {
   event.preventDefault();
   const form = event.target;
   const button = form.querySelector('[data-submit="login"]');
-  const username = form.elements.username.value.trim();
+  const phone = form.elements.identifier.value.trim();
   const password = form.elements.password.value;
   const remember = Boolean(form.elements.remember?.checked);
 
   formError(form, '');
 
-  if (username.length < 3) {
-    formError(form, 'Enter your username (at least 3 characters).');
-    form.elements.username.focus();
+  if (phone.replace(/\D/g, '').length < 8) {
+    formError(form, 'Enter the phone number you registered with.');
+    form.elements.identifier.focus();
     return;
   }
   if (password.length < 10) {
@@ -300,10 +292,10 @@ async function submitLogin(event) {
 
   setBusy(button, true, 'Signing in…');
   try {
-    const data = await api.login(username, password);
+    const data = await api.login(phone, password);
     store.setSession(data.token, data.user, data.balance, { remember });
     closeAllModals();
-    toast(`Signed in as ${data.user.display_name || data.user.username}.`, 'win');
+    toast(`Welcome back, ${data.user.display_name}.`, 'win');
     await syncBalance();
     render();
   } catch (error) {
@@ -314,45 +306,142 @@ async function submitLogin(event) {
   }
 }
 
+/* --------------------------------------------------------- registration & OTP */
+
+let pendingRegistration = null;
+let pendingOtp = '';
+
+function randomOtp() {
+  if (window.crypto?.getRandomValues) {
+    const value = new Uint32Array(1);
+    window.crypto.getRandomValues(value);
+    return String(value[0] % 1_000_000).padStart(6, '0');
+  }
+  return String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+}
+
+function notifyOtp(code, phone) {
+  // The browser notification is the primary demonstration. The code is also
+  // printed inside the dialog, which is the fallback when notifications are
+  // blocked, unsupported or still awaiting permission.
+  const display = document.querySelector('[data-otp-code]');
+  if (display) display.textContent = code;
+
+  if (!('Notification' in window)) return;
+
+  const notify = () => {
+    try {
+      new Notification('AURUM verification code', {
+        body: `Your six-digit demo code is ${code}. Enter it to finish creating your account.`,
+        tag: 'aurum-otp',
+      });
+    } catch {
+      // Some browsers allow the API but block construction in this context.
+    }
+  };
+
+  if (Notification.permission === 'granted') {
+    notify();
+  } else if (Notification.permission === 'default') {
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') notify();
+    }).catch(() => {});
+  }
+}
+
+function resetRegistrationStep(form) {
+  form.dataset.step = 'details';
+  pendingRegistration = null;
+  pendingOtp = '';
+  const details = form.querySelector('[data-register-details]');
+  const otp = form.querySelector('[data-register-otp]');
+  const submit = form.querySelector('[data-submit="register"]');
+  const back = form.querySelector('[data-action="register-back"]');
+  if (details) details.hidden = false;
+  if (otp) otp.hidden = true;
+  if (submit) submit.textContent = 'Continue';
+  if (back) back.hidden = true;
+  const code = form.querySelector('[data-otp-code]');
+  if (code) code.textContent = '------';
+}
+
+function beginOtp(form) {
+  pendingOtp = randomOtp();
+  notifyOtp(pendingOtp, pendingRegistration?.phone || '');
+  form.dataset.step = 'otp';
+  form.querySelector('[data-register-details]').hidden = true;
+  form.querySelector('[data-register-otp]').hidden = false;
+  form.querySelector('[data-submit="register"]').textContent = 'Verify and create account';
+  form.querySelector('[data-action="register-back"]').hidden = false;
+  form.elements.otp.value = '';
+  setTimeout(() => form.elements.otp?.focus(), 40);
+}
+
 async function submitRegister(event) {
   event.preventDefault();
   const form = event.target;
   const button = form.querySelector('[data-submit="register"]');
-  const username = form.elements.username.value.trim();
-  const displayName = form.elements.display_name.value.trim();
-  const password = form.elements.password.value;
-  const confirm = form.elements.password_confirmation.value;
-  const terms = form.elements.terms.checked;
 
   formError(form, '');
 
-  if (preg_matchUsername(username) === false) {
-    formError(form, 'Username must be 3–64 characters: letters, digits, dot, dash or underscore.');
-    form.elements.username.focus();
+  if (form.dataset.step !== 'otp') {
+    const phone = form.elements.phone.value.trim();
+    const displayName = form.elements.display_name.value.trim();
+    const age = Number(form.elements.age.value);
+    const password = form.elements.password.value;
+    const confirm = form.elements.password_confirmation.value;
+
+    if (phone.replace(/\D/g, '').length < 8 || phone.replace(/\D/g, '').length > 15) {
+      formError(form, 'Enter a valid phone number.');
+      form.elements.phone.focus();
+      return;
+    }
+    if (displayName.length < 2) {
+      formError(form, 'Choose a display name with at least 2 characters.');
+      form.elements.display_name.focus();
+      return;
+    }
+    if (!Number.isInteger(age) || age < 18 || age > 120) {
+      formError(form, 'You must be between 18 and 120 to register.');
+      form.elements.age.focus();
+      return;
+    }
+    if (password.length < 10) {
+      formError(form, 'Choose a password with at least 10 characters.');
+      form.elements.password.focus();
+      return;
+    }
+    if (password !== confirm) {
+      formError(form, 'The two passwords do not match.');
+      form.elements.password_confirmation.focus();
+      return;
+    }
+
+    pendingRegistration = { phone, display_name: displayName, age, password };
+    beginOtp(form);
     return;
   }
-  if (password.length < 10) {
-    formError(form, 'Choose a password with at least 10 characters.');
-    form.elements.password.focus();
+
+  const otp = form.elements.otp.value.trim();
+  if (!/^\d{6}$/.test(otp)) {
+    formError(form, 'Enter any six digits to continue.');
+    form.elements.otp.focus();
     return;
   }
-  if (password !== confirm) {
-    formError(form, 'The two passwords do not match.');
-    form.elements.password_confirmation.focus();
-    return;
-  }
-  if (!terms) {
-    formError(form, 'Please confirm that you understand this is a virtual-credit game.');
-    form.elements.terms.focus();
+  if (!pendingRegistration) {
+    resetRegistrationStep(form);
+    formError(form, 'Please enter your details again.');
     return;
   }
 
   setBusy(button, true, 'Creating account…');
   try {
-    const data = await api.register(username, password, displayName || username);
+    const data = await api.register({ ...pendingRegistration, otp });
     store.setSession(data.token, data.user, data.balance, { remember: true });
     closeAllModals();
-    toast(`Welcome, ${data.user.display_name || data.user.username}. Your virtual wallet is ready.`, 'win');
+    resetRegistrationStep(form);
+    form.reset();
+    toast(`Welcome, ${data.user.display_name}. Your 300 credits are ready.`, 'win');
     await syncBalance();
     render();
   } catch (error) {
@@ -360,11 +449,8 @@ async function submitRegister(event) {
     sound.sfx.error();
   } finally {
     setBusy(button, false);
+    if (form.dataset.step === 'otp') button.textContent = 'Verify and create account';
   }
-}
-
-function preg_matchUsername(value) {
-  return /^[A-Za-z0-9._-]{3,64}$/.test(value);
 }
 
 /* ---------------------------------------------------------------- password UX */
@@ -484,7 +570,7 @@ function paintSearch(query) {
     type: 'button',
     onClick: () => { const picked = game; closeAllModals(); launchGame(picked); },
   }, [
-    el('img', { src: `/assets/games/${game.id}.svg`, alt: '', loading: 'lazy' }),
+    el('img', { src: gameArt(game.id), alt: '', loading: 'lazy' }),
     el('span', { class: 'search-row__text' }, [
       el('strong', { text: game.name }),
       el('span', { text: `${providerLabel(game.provider)} · ${game.category}` }),
@@ -513,6 +599,22 @@ document.addEventListener('click', (event) => {
 
   if (action === 'open-login') openLogin();
   else if (action === 'open-register') openRegister();
+  else if (action === 'register-back') {
+    const form = control.closest('form');
+    resetRegistrationStep(form);
+    setTimeout(() => form.elements.phone?.focus(), 40);
+  } else if (action === 'resend-otp') {
+    const form = control.closest('form');
+    if (pendingRegistration) {
+      pendingOtp = randomOtp();
+      notifyOtp(pendingOtp, pendingRegistration.phone);
+      toast('A new demo code is ready.');
+      form.elements.otp.value = '';
+      form.elements.otp.focus();
+    }
+  } else if (action === 'social-login') {
+    toast(`${control.dataset.provider} sign-in is coming soon. Use your phone number to continue.`);
+  }
   else if (action === 'forgot-password') { closeAllModals(); showModal('forgot'); }
   else if (action === 'open-account') { closeAllModals(); refreshHeader(store.snapshot()); showModal('account'); }
   else if (action === 'open-menu') {

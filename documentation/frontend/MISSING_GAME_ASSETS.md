@@ -62,7 +62,7 @@ php tools/generate_assets.php /tmp/lobby.json public/assets
 | Brand wordmark | Original, final | `public/assets/brand/aurum-logo.svg` |
 | Brand monogram | Original, final | `public/assets/brand/aurum-mark.svg` |
 | App icon / favicon | Original, final | `brand/app-icon.svg`, `brand/favicon.svg` |
-| Banner art | Original, final (3 slides) | `public/assets/banners/slide-{1,2,3}.svg` |
+| Banner art | AH77 character crops, final (3 slides) | `public/assets/banners/feature-{super-ace,gifts,roulette}.webp` |
 | Provider game clients (iframes) | **Absent** — not in the export and not part of the engine | A provider integration would need its own route and contract; the current modules are engine-native |
 | Live-dealer video / imagery | Absent | No live category is shown |
 | Fishing / lottery / sports art | Absent | Those categories are not registered |
@@ -74,20 +74,19 @@ php tools/generate_assets.php /tmp/lobby.json public/assets
 
 ## 4. What "placeholder" means in the UI
 
-* **Tiles** are labelled `ENGINE APPROXIMATION` below the emblem, so a player is not
-  shown provider branding that would imply an official port.
+* **Tiles** for matched slot titles use the supplied AH77_SOURCE artwork; the
+  remaining synthetic/coin tiles are label-free generated emblems and do not imply an
+  official provider port.
 * **Synthetic modules** keep their engine names and `Engine Test Fixtures` provider line.
   They are playable, but are labelled as fixtures.
 * **Coin Flip** is labelled `Engine Examples` and states its fixed heads call and 50%
   reported RTP. It is not disguised as a commercial title.
 * No tile, banner or game screen promises a prize, deposit, bonus or real-money payout.
 
-## 5. Adding licensed art later
+## 5. Adding or replacing art
 
-If the project obtains licences for the original provider artwork:
-
-1. Replace the tile files at the paths above, or change the catalogue's art mapping.
-2. Keep the attribution required by the licence in the footer or an about page.
+1. Change the tile files at the paths above, or update `public/assets/js/lib/art.js`.
+2. Match by game identity; do not assign an unrelated thumbnail by position.
 3. Update `ASSET_MAPPING.md` and this file so the provenance record stays accurate.
-4. Do not reintroduce the reference site's deposit/bonus banners: they describe products
+4. Do not reintroduce the reference site's deposit/bonus text: it describes products
    this engine does not have.

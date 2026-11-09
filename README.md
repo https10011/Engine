@@ -18,12 +18,12 @@ probability panel.
 | Part | State |
 | --- | --- |
 | Game engine | 22 modules across slot, card and roulette frameworks; authority is always server-side |
-| Player frontend | AURUM — mobile-first lobby, search, auth, four game interfaces, history |
-| Administrator panel | probability profiles, versions, audit and jackpot history (admin accounts only) |
+| Player frontend | AURUM — mobile-first lobby, search, phone registration/login, demo OTP, four game interfaces, history |
+| Administrator panel | dedicated `admin.php`: users, credits, suspension, game availability, odds/friendly play, audit |
 | HTTP API | bearer-token JSON API under `/api/v1` |
 | CLI | migrations, users, games, simulation, maintenance purges |
-| Database | MySQL/MariaDB schema, five migrations, one importable `install.sql` |
-| Tests | 277 tests / 22,791 assertions; PHPStan and PHP lint clean |
+| Database | MySQL/MariaDB schema, eight migrations, one importable `install.sql` |
+| Tests | 294 tests / 22,836 assertions; PHPStan and PHP lint clean |
 | Deployment bundle | [`htdocs/`](htdocs/) — complete app for a PHP/MySQL shared host |
 
 The 22 modules are 17 slots, two blackjack tables, two roulette tables and one
@@ -39,18 +39,18 @@ MariaDB 10.6+, Composer 2.
 
 ```bash
 composer install
-cp .env.example .env            # set DB_HOST/DB_DATABASE/DB_USERNAME/DB_PASSWORD
-php bin/console db:migrate       # create the schema
+cp .env.example .env                    # app/runtime settings only
+cp config/database.local.example.php config/database.local.php
+# edit config/database.local.php with the local database credentials
+php bin/console db:migrate               # create the schema
 php bin/console serve --host=0.0.0.0 --port=3000
 ```
 
-Open <http://localhost:3000/>. The lobby is public; register an account to open
-a game, or create one from the CLI:
-
-```bash
-php bin/console user:create --username=player --password='a-long-password'
-php bin/console user:admin  --username=player   # optional admin access
-```
+Open <http://localhost:3000/>. The lobby is public; register with a phone
+number, display name, age and password. Registration grants **300 credits**
+once and shows a six-digit demo code in a browser notification (no SMS is
+sent). The administrator console is at `/admin.php`; the seeded initial
+account is `admin` / `Tyroar123` — change it immediately in a real deployment.
 
 Useful commands:
 
@@ -73,9 +73,13 @@ the server.
 1. Create a MySQL database and user in the hosting panel.
 2. Upload the contents of `htdocs/` to the domain root (`public_html/`) or a
    subdomain root.
-3. Copy `htdocs/.env.example` to `htdocs/.env` and enter the database values.
-4. Import `htdocs/database/install.sql` with phpMyAdmin.
-5. Make `storage/` writable (`chmod -R 775 storage`), then open the site.
+3. Copy `htdocs/config/database.local.example.php` to
+   `htdocs/config/database.local.php` and enter the host, port, database,
+   username, password and charset. This file is ignored by Git; `.env` is not
+   needed for database credentials.
+4. Import `htdocs/database/install.sql` with phpMyAdmin (fresh install).
+5. Make `storage/` writable (`chmod -R 775 storage`), then open the site and
+   sign in to the administrator console at `/admin.php`.
 
 `htdocs/` is generated and committed. Rebuild it after source changes:
 
@@ -94,7 +98,7 @@ Full instructions, Nginx rules, troubleshooting and the security checklist:
 public/                 development document root (front controller + SPA + assets)
 htdocs/                 generated, self-contained production tree
 src/                    engine, frameworks, games, API, CLI, persistence
-config/                 defaults overridden by .env
+config/                 application defaults + database.local.php credentials loader
 database/               migrations (and htdocs/database/install.sql in the bundle)
 bin/                    CLI entry points
 tests/                  PHPUnit suites (unit, framework, transaction, API, integration)

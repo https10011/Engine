@@ -29,6 +29,7 @@ class ComposerStaticInita07f59b3339ce53600679f7ebb1c742c
     );
 
     public static $classMap = array (
+        'CasinoEngine\\Admin\\AdminSession' => __DIR__ . '/../..' . '/src/Admin/AdminSession.php',
         'CasinoEngine\\Api\\ApiKernel' => __DIR__ . '/../..' . '/src/Api/ApiKernel.php',
         'CasinoEngine\\Api\\Controller\\AbstractController' => __DIR__ . '/../..' . '/src/Api/Controller/AbstractController.php',
         'CasinoEngine\\Api\\Controller\\AdminController' => __DIR__ . '/../..' . '/src/Api/Controller/AdminController.php',
@@ -64,6 +65,7 @@ class ComposerStaticInita07f59b3339ce53600679f7ebb1c742c
         'CasinoEngine\\Cli\\Command\\TokenPurgeCommand' => __DIR__ . '/../..' . '/src/Cli/Command/TokenPurgeCommand.php',
         'CasinoEngine\\Cli\\Command\\UserAdminCommand' => __DIR__ . '/../..' . '/src/Cli/Command/UserAdminCommand.php',
         'CasinoEngine\\Cli\\Command\\UserCreateCommand' => __DIR__ . '/../..' . '/src/Cli/Command/UserCreateCommand.php',
+        'CasinoEngine\\Cli\\Command\\UserPasswordCommand' => __DIR__ . '/../..' . '/src/Cli/Command/UserPasswordCommand.php',
         'CasinoEngine\\Cli\\Command\\WalletShowCommand' => __DIR__ . '/../..' . '/src/Cli/Command/WalletShowCommand.php',
         'CasinoEngine\\Core\\Bootstrap' => __DIR__ . '/../..' . '/src/Core/Bootstrap.php',
         'CasinoEngine\\Core\\Config\\Config' => __DIR__ . '/../..' . '/src/Core/Config/Config.php',
@@ -234,8 +236,11 @@ class ComposerStaticInita07f59b3339ce53600679f7ebb1c742c
         'CasinoEngine\\Persistence\\Repository\\TokenRepository' => __DIR__ . '/../..' . '/src/Persistence/Repository/TokenRepository.php',
         'CasinoEngine\\Persistence\\Repository\\UserRepository' => __DIR__ . '/../..' . '/src/Persistence/Repository/UserRepository.php',
         'CasinoEngine\\Persistence\\Repository\\WalletRepository' => __DIR__ . '/../..' . '/src/Persistence/Repository/WalletRepository.php',
+        'CasinoEngine\\Services\\Admin\\AdminService' => __DIR__ . '/../..' . '/src/Services/Admin/AdminService.php',
+        'CasinoEngine\\Services\\Admin\\GameControlService' => __DIR__ . '/../..' . '/src/Services/Admin/GameControlService.php',
         'CasinoEngine\\Services\\Auth\\AuthService' => __DIR__ . '/../..' . '/src/Services/Auth/AuthService.php',
         'CasinoEngine\\Services\\Auth\\AuthServiceInterface' => __DIR__ . '/../..' . '/src/Services/Auth/AuthServiceInterface.php',
+        'CasinoEngine\\Services\\Auth\\PhoneNumber' => __DIR__ . '/../..' . '/src/Services/Auth/PhoneNumber.php',
         'CasinoEngine\\Services\\Betting\\BettingService' => __DIR__ . '/../..' . '/src/Services/Betting/BettingService.php',
         'CasinoEngine\\Services\\Betting\\BettingServiceInterface' => __DIR__ . '/../..' . '/src/Services/Betting/BettingServiceInterface.php',
         'CasinoEngine\\Services\\History\\HistoryService' => __DIR__ . '/../..' . '/src/Services/History/HistoryService.php',

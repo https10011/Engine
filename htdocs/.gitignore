@@ -1,0 +1,3 @@
+# Local deployment credentials. Use config/database.local.example.php as the template.
+config/database.local.php
+.env

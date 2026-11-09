@@ -26,6 +26,7 @@ use CasinoEngine\Cli\Command\SessionStartCommand;
 use CasinoEngine\Cli\Command\TokenPurgeCommand;
 use CasinoEngine\Cli\Command\UserAdminCommand;
 use CasinoEngine\Cli\Command\UserCreateCommand;
+use CasinoEngine\Cli\Command\UserPasswordCommand;
 use CasinoEngine\Cli\Command\WalletShowCommand;
 use CasinoEngine\Core\Bootstrap;
 use CasinoEngine\Core\Engine;
@@ -66,6 +67,7 @@ $application->registerAll([
     new DbStatusCommand(),
     new UserCreateCommand(),
     new UserAdminCommand(),
+    new UserPasswordCommand(),
     new WalletShowCommand(),
     new SessionStartCommand(),
     new SessionExpireCommand(),

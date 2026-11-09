@@ -111,7 +111,7 @@ final class ApiKernel
             $container->get(WalletRepository::class),
             $container->get(ConnectionInterface::class),
             $container->get(ClockInterface::class),
-            (int) $security->get('security.registration_starting_balance_minor', 100000),
+            (int) $security->get('security.registration_starting_balance_minor', 30000),
             (string) $security->get('engine.currency', 'PHP'),
             (int) $security->get('betting.currency_minor_units', 2),
             (bool) $security->get('security.allow_self_registration', true)
@@ -125,7 +125,10 @@ final class ApiKernel
 
     private function registerGameRoutes(Router $router, \CasinoEngine\Core\Container $container): void
     {
-        $controller = new GameController($container->get(GameRegistryInterface::class));
+        $controller = new GameController(
+            $container->get(GameRegistryInterface::class),
+            $container->get(\CasinoEngine\Services\Admin\GameControlService::class)
+        );
 
         $router->add(new Route('GET', '/api/v1/games', $controller->index(...)));
         // The lobby catalogue is registered before the `{gameId}` route so a
@@ -140,7 +143,8 @@ final class ApiKernel
         $controller = new SessionController(
             $this->engine,
             $container->get(GameRegistryInterface::class),
-            $container->get(SessionServiceInterface::class)
+            $container->get(SessionServiceInterface::class),
+            $container->get(\CasinoEngine\Services\Admin\GameControlService::class)
         );
 
         $router->add(new Route('GET', '/api/v1/sessions', $controller->index(...), ['auth']));

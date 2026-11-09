@@ -44,6 +44,7 @@ abstract class DatabaseTestCase extends BaseTestCase
         'probability_versions',
         'probability_profiles',
         'jackpot_events',
+        'game_controls',
         'users',
         'games',
         'audit_log',

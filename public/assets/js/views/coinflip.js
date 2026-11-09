@@ -7,6 +7,7 @@
 // side, because the module offers no such action.
 
 import { el, mount, money } from '../lib/dom.js';
+import { gameArt } from '../lib/art.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, applyTheme } from '../lib/ui.js';
 import * as store from '../lib/store.js';
@@ -61,7 +62,7 @@ export async function renderCoinflip(context, presentation = null) {
     ]),
   ]);
 
-  const status = el('p', { class: 'coin__status', text: 'The engine calls heads. Press flip to settle a round.', 'aria-live': 'polite' });
+  const status = el('p', { class: 'coin__status', text: 'Heads is in play. Press flip when you are ready.', 'aria-live': 'polite' });
   const outcome = el('div', { class: 'coin__outcome', 'aria-live': 'polite' });
   const flipCount = el('span', { class: 'coin__count', text: 'No flips yet' });
 
@@ -79,22 +80,22 @@ export async function renderCoinflip(context, presentation = null) {
 
   const rules = el('div', { class: 'rules' }, [
     el('ul', {}, [
-      el('li', {}, [el('strong', { text: 'Call: ' }), 'heads (fixed by the module)']),
+      el('li', {}, [el('strong', { text: 'Your call: ' }), 'heads']),
       el('li', {}, [el('strong', { text: 'Payout: ' }), '2× the stake when heads lands']),
       el('li', {}, [el('strong', { text: 'Reported RTP: ' }), `${(Number(game.rtp) * 100).toFixed(2)}%`]),
       el('li', {}, [el('strong', { text: 'Max win: ' }), `${game.max_win_multiplier}×`]),
       el('li', {}, [el('strong', { text: 'Bet limits: ' }), `${money(minBet, scale, currency)} – ${money(maxBet, scale, currency)}`]),
     ]),
-    el('p', { class: 'muted', text: 'A single RNG draw settles each flip. This is the engine example module, not a provider table, and it plays with virtual credits only.' }),
+    el('p', { class: 'muted', text: 'Call it heads and give the coin a flip.' }),
   ]);
 
   const node = el('div', { class: 'fade-in' });
 
   const layout = el('div', { class: 'coin-page' }, [
     el('div', { class: 'game-head' }, [
-      el('img', { class: 'game-head__art', src: `/assets/games/${game.id}.svg`, alt: '', width: '96', height: '96' }),
+      el('img', { class: 'game-head__art', src: gameArt(game.id), alt: '', width: '96', height: '96' }),
       el('div', { class: 'game-head__text' }, [
-        el('p', { class: 'game-head__eyebrow', text: 'Table game · virtual credits' }),
+        el('p', { class: 'game-head__eyebrow', text: 'Table game' }),
         el('h1', { class: 'game-head__title', text: game.name }),
         el('p', { class: 'game-head__meta', text: `${game.provider} · ${(Number(game.rtp) * 100).toFixed(2)}% RTP` }),
       ]),
@@ -204,12 +205,10 @@ export async function renderCoinflip(context, presentation = null) {
 
       outcome.replaceChildren(el('strong', {
         class: result === 'heads' ? 'coin__result coin__result--win' : 'coin__result coin__result--lose',
-        text: result === 'heads' ? 'Heads — you win' : 'Tails — the engine takes it',
+        text: result === 'heads' ? 'Heads — you win' : 'Tails — better luck next time',
       }));
 
-      status.textContent = detail.call
-        ? `The module called ${detail.call}; the coin landed ${result}.`
-        : `The coin landed ${result}.`;
+      status.textContent = `The coin landed ${result}.`;
       flipCount.textContent = `${flips} flip${flips === 1 ? '' : 's'} this session`;
       payoutOutput.textContent = payout ? money(payout, scale, currency) : '—';
 

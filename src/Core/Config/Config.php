@@ -107,6 +107,8 @@ final class Config
             'AUDIT_RETENTION_DAYS'        => 'security.audit_retention_days',
             'RATE_LIMIT_RETENTION_DAYS'   => 'security.rate_limit_retention_days',
             'PASSWORD_ALGO'               => 'security.password_algo',
+            'ALLOW_SELF_REGISTRATION'     => 'security.allow_self_registration',
+            'REGISTRATION_STARTING_BALANCE_MINOR' => 'security.registration_starting_balance_minor',
             'ENGINE_VERSION_OVERRIDE'     => 'engine.version',
         ];
 

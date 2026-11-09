@@ -14,7 +14,8 @@ final class UserRepository extends AbstractRepository
     public function findById(int $userId): ?array
     {
         return $this->fetchOne(
-            'SELECT id, username, display_name, status, role, created_at, updated_at FROM users WHERE id = ?',
+            'SELECT id, username, phone, display_name, age, status, role, created_at, updated_at
+             FROM users WHERE id = ?',
             [$userId]
         );
     }
@@ -23,8 +24,19 @@ final class UserRepository extends AbstractRepository
     public function findByUsername(string $username): ?array
     {
         return $this->fetchOne(
-            'SELECT id, username, display_name, status, role, created_at, updated_at FROM users WHERE username = ?',
+            'SELECT id, username, phone, display_name, age, status, role, created_at, updated_at
+             FROM users WHERE username = ?',
             [$username]
+        );
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByPhone(string $phone): ?array
+    {
+        return $this->fetchOne(
+            'SELECT id, username, phone, display_name, age, status, role, created_at, updated_at
+             FROM users WHERE phone = ?',
+            [$phone]
         );
     }
 
@@ -40,11 +52,37 @@ final class UserRepository extends AbstractRepository
     public function create(string $username, string $displayName, string $now): int
     {
         $this->execute(
-            'INSERT INTO users (username, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO users (username, display_name, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?)',
             [$username, $displayName, 'active', $now, $now]
         );
 
         return (int) $this->pdo()->lastInsertId();
+    }
+
+    /** Creates a player account identified by phone rather than a public username. */
+    public function createPlayer(
+        string $internalUsername,
+        string $phone,
+        string $displayName,
+        int $age,
+        string $now
+    ): int {
+        $this->execute(
+            'INSERT INTO users (username, phone, display_name, age, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [$internalUsername, $phone, $displayName, $age, 'active', $now, $now]
+        );
+
+        return (int) $this->pdo()->lastInsertId();
+    }
+
+    public function updateStatus(int $userId, string $status, string $now): void
+    {
+        $this->execute(
+            'UPDATE users SET status = ?, updated_at = ? WHERE id = ?',
+            [$status, $now, $userId]
+        );
     }
 
     public function setCredentials(int $userId, string $hash, string $algo, string $now): void

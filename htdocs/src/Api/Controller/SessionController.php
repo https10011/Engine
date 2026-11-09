@@ -10,6 +10,7 @@ use CasinoEngine\Api\Http\Response;
 use CasinoEngine\Core\Engine;
 use CasinoEngine\Core\Exception\ValidationException;
 use CasinoEngine\Core\Registry\GameRegistryInterface;
+use CasinoEngine\Services\Admin\GameControlService;
 use CasinoEngine\Services\Session\SessionServiceInterface;
 
 /**
@@ -25,7 +26,8 @@ final class SessionController extends AbstractController
     public function __construct(
         private readonly Engine $engine,
         private readonly GameRegistryInterface $registry,
-        private readonly SessionServiceInterface $sessions
+        private readonly SessionServiceInterface $sessions,
+        private readonly GameControlService $controls
     ) {
     }
 
@@ -36,6 +38,9 @@ final class SessionController extends AbstractController
     {
         $gameId = $request->requireString('game_id');
         $game = $this->registry->get($gameId);
+        if (!$this->controls->isAvailable($gameId)) {
+            throw new ValidationException('This game is currently unavailable.');
+        }
         $state = $game->createInitialState($this->engine->contextFor($game));
 
         $session = $this->sessions->create($context->userId(), $gameId, $state);

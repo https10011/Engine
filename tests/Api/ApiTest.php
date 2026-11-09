@@ -154,7 +154,7 @@ final class ApiTest extends DatabaseTestCase
         // The message names both fields together, so it never reveals which
         // half of the credential was the problem, and never confirms whether
         // the account exists at all.
-        self::assertSame('Invalid username or password.', $response->error['message']);
+        self::assertSame('Invalid phone number or password.', $response->error['message']);
     }
 
     public function testLoginRejectsAnUnknownUserWithTheSameMessageAsAWrongPassword(): void
@@ -165,47 +165,84 @@ final class ApiTest extends DatabaseTestCase
         self::assertSame($unknown->error['message'], $wrong->error['message']);
     }
 
-    public function testRegistrationCreatesAVirtualWalletAndSignsThePlayerIn(): void
+    public function testRegistrationCreatesAThreeHundredCreditPhoneAccount(): void
     {
         $response = $this->post('/api/v1/auth/register', [
-            'username'     => 'newplayer',
-            'password'     => 'a-long-enough-password',
+            'phone'        => '0917 123 4567',
             'display_name' => 'New Player',
+            'age'          => 24,
+            'password'     => 'a-long-enough-password',
+            'otp'          => '123456',
         ]);
 
         self::assertSame(201, $response->status, $response->body());
-        self::assertSame('newplayer', $response->data['user']['username']);
+        self::assertSame('+639171234567', $response->data['user']['phone']);
+        self::assertSame(24, $response->data['user']['age']);
+        self::assertSame('New Player', $response->data['user']['display_name']);
         self::assertSame('player', $response->data['user']['role']);
-        self::assertSame(100000, $response->data['balance']['amount']);
+        self::assertSame(30000, $response->data['balance']['amount']);
         self::assertNotSame('', $response->data['token']);
 
         // The returned token is a real session, not just a registration receipt.
         $wallet = $this->get('/api/v1/wallet', ['authorization' => 'Bearer ' . $response->data['token']]);
         self::assertSame(200, $wallet->status);
-        self::assertSame(100000, $wallet->data['balance']['amount']);
+        self::assertSame(30000, $wallet->data['balance']['amount']);
     }
 
-    public function testRegistrationRejectsADuplicateUsername(): void
+    public function testRegistrationRejectsTheSamePhoneInAnotherFormat(): void
     {
-        $body = ['username' => 'takenname', 'password' => 'a-long-enough-password'];
-        $this->post('/api/v1/auth/register', $body);
+        $body = [
+            'phone' => '0917 123 4567', 'display_name' => 'First', 'age' => 22,
+            'password' => 'a-long-enough-password', 'otp' => '123456',
+        ];
+        $first = $this->post('/api/v1/auth/register', $body);
+        self::assertSame(201, $first->status, $first->body());
 
-        $second = $this->post('/api/v1/auth/register', $body);
+        $second = $this->post('/api/v1/auth/register', [
+            'phone' => '+63 917 123 4567', 'display_name' => 'Second', 'age' => 30,
+            'password' => 'another-long-password', 'otp' => '654321',
+        ]);
 
         self::assertSame(422, $second->status);
         self::assertSame('VALIDATION_ERROR', $second->error['code']);
+        self::assertSame('An account with that phone number already exists.', $second->error['message']);
     }
 
-    public function testRegistrationRejectsAShortPasswordAndAMalformedUsername(): void
+    public function testPhoneLoginUsesTheCanonicalNumber(): void
     {
-        $short = $this->post('/api/v1/auth/register', ['username' => 'shortpass', 'password' => 'short']);
-        self::assertSame(422, $short->status);
-
-        $badName = $this->post('/api/v1/auth/register', [
-            'username' => 'no spaces allowed',
-            'password' => 'a-long-enough-password',
+        $this->post('/api/v1/auth/register', [
+            'phone' => '0917 123 4567', 'display_name' => 'Phone Player', 'age' => 24,
+            'password' => 'a-long-enough-password', 'otp' => '123456',
         ]);
-        self::assertSame(422, $badName->status);
+
+        $login = $this->post('/api/v1/auth/login', [
+            'identifier' => '9171234567',
+            'password'   => 'a-long-enough-password',
+        ]);
+
+        self::assertSame(200, $login->status, $login->body());
+        self::assertSame('+639171234567', $login->data['user']['phone']);
+    }
+
+    public function testRegistrationRejectsBadOtpAgePasswordAndPhone(): void
+    {
+        $base = [
+            'phone' => '0917 123 4567', 'display_name' => 'New Player', 'age' => 24,
+            'password' => 'a-long-enough-password', 'otp' => '123456',
+        ];
+
+        foreach (
+            [
+            ['otp' => '12345'],
+            ['otp' => 'abcdef'],
+            ['age' => 17],
+            ['password' => 'short'],
+            ['phone' => 'not-a-phone'],
+            ] as $override
+        ) {
+            $response = $this->post('/api/v1/auth/register', array_replace($base, $override));
+            self::assertSame(422, $response->status, (string) json_encode($override));
+        }
     }
 
     public function testProtectedEndpointRequiresAToken(): void

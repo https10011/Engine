@@ -59,9 +59,9 @@ local smoke test cannot accidentally expose source or `.env`.
 
 ### Before going live
 
-- [ ] `APP_ENV=production`, `APP_DEBUG=false` in `.env`.
-- [ ] `.env` exists, is readable by PHP, is **not** committed, and returns
-      403/404 over HTTP.
+- [ ] `APP_ENV=production`, `APP_DEBUG=false` (defaults; `.env` optional).
+- [ ] `config/database.local.php` exists, is readable by PHP, is **not**
+      committed, and returns 403/404 over HTTP.
 - [ ] Database user is dedicated to this schema and has a long unique password.
 - [ ] `database/install.sql` imported into an empty database; `db:status` shows
       no drift (if CLI is available).
@@ -70,7 +70,9 @@ local smoke test cannot accidentally expose source or `.env`.
 - [ ] HTTPS enabled and the HSTS header uncommented in `.htaccess`.
 - [ ] Public registration intentionally on or off
       (`ALLOW_SELF_REGISTRATION`).
-- [ ] Admin account created; `role` is `admin` only for the owner.
+- [ ] Seeded `admin` password changed with
+      `php bin/console user:password --username=admin --password='…'`;
+      `role` is `admin` only for the owner.
 - [ ] Probe private URLs (below) and confirm 403/404.
 
 ### Probe these URLs after upload
@@ -78,6 +80,7 @@ local smoke test cannot accidentally expose source or `.env`.
 ```
 /.env
 /config/app.php
+/config/database.local.php
 /database/install.sql
 /src/Core/Bootstrap.php
 /vendor/autoload.php
@@ -92,7 +95,7 @@ Also confirm `/assets/css/app.css` is `text/css` and `/api/v1/health` is JSON.
 ### Ongoing
 
 - Keep PHP and the database patched through the hosting panel.
-- Back up the database and `.env` before upgrades.
+- Back up the database, `config/database.local.php` and `.env` before upgrades.
 - Review `storage/logs/engine.log` for repeated `auth.login.failed` events.
 - Rotate the database password if it was ever pasted into a chat or ticket.
 - If SSH is available, schedule the purge commands; they are optional.

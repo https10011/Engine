@@ -1,27 +1,33 @@
 # Project Status
 
 > Single-page truth about where the project stands.
-> Last updated: 2026-11-08 — frontend completion, project audit and shared-hosting package.
+> Last updated: 2026-11-09 — private-app refinement, phone/demo-OTP registration, database.local config, standalone admin console, AH77 art.
 
 ---
 
 ## Current phase
 
-**Engine, 22 registered games, player frontend, administrator panel and the
-shared-hosting deployment bundle are complete.**
+**Engine, 22 registered games, player frontend, standalone administrator
+console and the shared-hosting deployment bundle are complete.**
 
 The 18 target games (16 slots, blackjack, roulette) are implemented and verified
 end to end through `RoundService`; four engine examples (`coinflip.heads-tails`,
 `synthetic.slot3x3`, `synthetic.blackjack`, `synthetic.roulette`) bring the live
 catalogue to **22 modules**. The AURUM player interface covers every module with
-four real interface types, and the administrator probability panel is reachable
-for admin accounts.
+four interface types.
 
-Phase 26 verification was **274 tests / 22,777 assertions**. The frontend phase
-added three registration tests and is now **277 tests / 22,791 assertions**, with
-PHP lint and PHPStan clean. A self-contained `htdocs/` tree was assembled from
-the same sources, imported into a fresh database and exercised through its
-production entry point; see the root `FINISHED_ANALYSIS_REPORT.md`.
+Players now register with phone, display name, age and password; the phone is
+canonicalised and unique, the account receives exactly 300 credits once, and a
+local demo OTP step shows a browser notification (no SMS). Google/Facebook
+buttons are presentation-only. `/admin.php` is a separate server-rendered
+console with users, audited credits/status, game availability, odds and
+friendly-play controls.
+
+Verification is **294 tests / 22,836 assertions**, with PHP lint and PHPStan
+clean. A self-contained `htdocs/` tree was built, served from a copy at `/tmp`
+with only `config/database.local.php` (no `.env`), imported into a fresh
+database, and exercised through the production entry point including the admin
+console.
 
 Current deployment target: conventional PHP 8.3 / MySQL shared hosting. Use
 `documentation/deployment/SHARED_HOSTING_DEPLOYMENT.md`, not the old web-root
@@ -131,9 +137,11 @@ Implementation (highlights):
   a documented SDK example.
 * `src/Services/Probability/` — probability configuration service, profile
   value object and win-frequency governor, reachable by an authorised
-  administrator through the `/api/v1/admin/*` routes.
+  administrator through the `/api/v1/admin/*` routes and the standalone
+  `/admin.php` console.
 * `public/app.html`, `public/assets/css/`, `public/assets/js/` — the player
-  frontend (lobby, catalog, slot, blackjack, roulette, history, admin views).
+  frontend (lobby, catalog, slot, blackjack, roulette, history). `public/admin.php`
+  and `public/assets/{css,js}/admin.*` are the separate operator console.
 
 ---
 
@@ -248,12 +256,12 @@ tables on the card and roulette frameworks.
   (`views/lobby.js`, `views/slot.js`, `views/blackjack.js`, `views/roulette.js`,
   `views/table.js`, `views/history.js`). Every outcome comes from the backend
   API; the client never decides a result.
-* **Administrator panel.** `public/assets/js/views/admin.js` plus the
-  `/api/v1/admin/*` routes, `AdminController`, `AdminMiddleware` and
-  `ProbabilityConfigService` give a logged-in administrator the global and
-  per-game probability controls, jackpot and bonus settings, configuration
-  history, audit log and the simulation/verification tool. The `users.role`
-  column gates access server-side.
+* **Administrator console.** `public/admin.php` is a server-rendered page with
+  its own PHP session, CSRF protection and database role re-check on every
+  request. It provides dashboard/user management/credits/status, game
+  availability, odds and friendly-play controls, and the audit trail. The
+  underlying probability API (`/api/v1/admin/*`) remains for compatibility, but
+  the player SPA no longer imports an admin view.
 
 ### Test status at this audit
 

@@ -8,9 +8,9 @@ difference is handled without inventing content.
 | Resource | Reference mirror | This repository |
 | --- | ---: | ---: |
 | Game titles shown in the lobby | 49 cards in the captured snapshot | **22** registered modules (`GET /api/v1/games/lobby`) |
-| Provider thumbnails | 57 files, 15 providers | 0 third-party; 22 generated original tiles |
+| Provider thumbnails | 57 files, 15 providers | 18 local WebP derivatives used where a title matches; 4 generated fallbacks (coin/synthetic) |
 | Playable game clients | provider iframes (not captured) | 4 real interfaces covering 22 modules |
-| Promotional banners | 18 | 3 original slides |
+| Promotional banners | 18 | 3 AH77 character crops with new copy |
 | Categories | Hot, Slot, Fishing, Live Casino, Poker, Lottery, Sport, E-sport | `slot`, `card`, `roulette` |
 | Deposit / withdrawal / bonus | yes (real-money framing) | none — virtual credits only |
 | Member centre / lottery | separate bundles | `My play` (rounds + ledger) and `Admin` (operators) |

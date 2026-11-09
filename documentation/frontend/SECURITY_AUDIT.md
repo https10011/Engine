@@ -76,20 +76,31 @@ no `eval`, no `new Function`, no inline event-handler attribute and no remote as
 `POST /api/v1/auth/register` is additive and reuses the existing repositories and
 `AuthService` hashing. It validates:
 
-* username `^[A-Za-z0-9._-]{3,64}$` and uniqueness (duplicate → validation error);
+* phone number, canonicalised to a single E.164-style value and backed by a unique
+  index (duplicate → validation error, including different spacing/prefix formats);
+* display name 2–64 characters, age 18–120;
 * password length 10–128;
-* display name ≤ 64 characters.
+* a six-digit numeric `otp`. This is a **local demonstration**: the browser displays a
+  generated code, any six digits are accepted, no SMS/provider is called, and the UI
+  does not claim the number is independently verified.
 
-User and wallet rows are written in one transaction. The only value created is virtual
-credits (`REGISTRATION_STARTING_BALANCE_MINOR`, default 100000 = ₱1,000.00). An operator
-can disable the route with `ALLOW_SELF_REGISTRATION=false`; the controller then returns
-an authorization error and `user:create` remains available.
+User, credentials and wallet rows are written in one transaction. The only value
+created is virtual credits (`REGISTRATION_STARTING_BALANCE_MINOR`, default 30000 =
+exactly 300 credits), created only with the account, so retries cannot grant it twice.
+An operator can disable the route with `ALLOW_SELF_REGISTRATION=false`.
 
-Residual risk: self-service registration has no email verification or CAPTCHA, so a
-public deployment can accumulate accounts. This is acceptable for a virtual-credit
-simulation but should be paired with the API rate limiter and, for a public launch,
-email verification or an invite code. That decision belongs to the deployment, not the
-engine.
+Residual risk: self-service registration has no real phone/email verification or
+CAPTCHA, so a public deployment can accumulate accounts. This is accepted for a private
+virtual-credit app with friends and is bounded by the API rate limiter.
+
+### Administrator authentication
+
+`/admin.php` uses a separate PHP session cookie, not the player's bearer token. Login
+verifies the password hash, requires `role = admin` and `status = active`, regenerates
+the session id, applies an idle timeout and a login-attempt lockout, and re-reads the
+role/status from the database on every request. Every mutation requires a CSRF token;
+logout destroys the session and clears the cookie. Player credentials are rejected by
+the administrator login.
 
 ### Client-side state
 

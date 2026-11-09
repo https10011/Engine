@@ -123,6 +123,43 @@
   font-weight: 800; color: var(--win);
 }
 .overlay--win { animation: fade-in 220ms ease-out both; }
+.overlay--celebration { overflow: hidden; background: radial-gradient(60% 65% at 50% 45%, rgba(91, 60, 4, 0.9), rgba(3, 7, 16, 0.96)); }
+.overlay--celebration .overlay__title { font-size: clamp(1.8rem, 6vw, 3.3rem); letter-spacing: 0.08em; animation: win-title 700ms cubic-bezier(.15,1.4,.4,1) both; }
+.overlay--celebration .overlay__count { animation: win-value 620ms 160ms cubic-bezier(.15,1.4,.4,1) both; }
+.overlay--celebration .overlay__sub { color: rgba(255, 255, 255, 0.8); }
+.overlay__rays {
+  position: absolute; inset: -40%; z-index: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(246, 199, 68, 0.18) 0 7deg, transparent 7deg 22deg);
+  animation: rays-spin 14s linear infinite;
+  mask-image: radial-gradient(circle at 50% 50%, #000 8%, transparent 68%);
+}
+.overlay__coins { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.overlay--celebration .overlay__title,
+.overlay--celebration .overlay__count,
+.overlay--celebration .overlay__sub { position: relative; z-index: 2; }
+.overlay__coin {
+  position: absolute; top: -12%; left: calc(8% + (var(--i) * 6.2%));
+  display: grid; width: 22px; height: 22px; place-items: center;
+  border-radius: 50%; border: 2px solid #a77409; background: radial-gradient(circle at 35% 30%, #fff3b0, #e8ae1f 62%, #b47d06);
+  color: #654400; font-size: 0.7rem; font-weight: 800;
+  animation: coin-drop 1.7s calc(var(--i) * 70ms) cubic-bezier(.3,.7,.4,1) both;
+}
+
+@keyframes rays-spin { to { transform: rotate(360deg); } }
+@keyframes coin-drop {
+  0% { transform: translateY(-20px) rotate(0deg) scale(0.8); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translateY(560px) rotate(420deg) scale(1.05); opacity: 0; }
+}
+@keyframes win-title { from { transform: scale(0.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes win-value { from { transform: translateY(16px) scale(0.8); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay__rays,
+  .overlay__coin,
+  .overlay--celebration .overlay__title,
+  .overlay--celebration .overlay__count { animation: none; }
+}
 
 /* --------------------------------------------------------------- controls */
 

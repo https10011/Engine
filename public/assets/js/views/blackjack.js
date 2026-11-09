@@ -12,6 +12,7 @@
 // hardcoded list.
 
 import { el, mount, money, ratio, providerLabel } from '../lib/dom.js';
+import { gameArt } from '../lib/art.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, applyTheme } from '../lib/ui.js';
 import * as store from '../lib/store.js';
@@ -328,7 +329,7 @@ export async function renderBlackjack(context) {
         el('li', {}, [el('strong', { text: 'Surrender: ' }), rules.surrender ? 'available' : 'not available']),
         el('li', {}, [el('strong', { text: 'Insurance: ' }), rules.insurance ? 'offered on an ace' : 'not offered']),
       ]),
-      el('p', { class: 'muted', text: 'The shoe, the dealer and the settlement are all decided by the engine. This table plays with virtual credits only.' }),
+      el('p', { class: 'muted', text: 'Take a seat, place your bet and play your hand against the dealer.' }),
     ]);
   }
 
@@ -336,7 +337,7 @@ export async function renderBlackjack(context) {
 
   const layout = el('div', { class: 'table table--blackjack' }, [
     el('div', { class: 'slot__head' }, [
-      el('img', { class: 'slot__art', src: `/assets/games/${game.id}.svg`, alt: '', width: '46', height: '46' }),
+      el('img', { class: 'slot__art', src: gameArt(game.id), alt: '', width: '46', height: '46' }),
       el('div', { class: 'slot__titles' }, [
         el('span', { class: 'slot__name', text: game.name }),
         el('span', { class: 'slot__provider', text: providerLabel(game.provider) }),

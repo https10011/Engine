@@ -414,6 +414,109 @@ table.table .num { text-align: right; font-family: var(--mono); }
 .auth__alt { margin: 0; text-align: center; font-size: 0.85rem; color: var(--muted); }
 .auth__note { margin: 0; text-align: center; font-size: 0.73rem; color: var(--faint); }
 
+.auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--faint);
+  font-size: 0.74rem;
+}
+
+.auth__divider::before,
+.auth__divider::after {
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+  content: "";
+}
+
+.social-row {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 42px;
+  padding: 0.58rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: #20242c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  transition: background var(--speed), border-color var(--speed), transform var(--speed);
+}
+
+.social-btn:hover { background: #f5f7fa; border-color: #c9d0da; }
+.social-btn:active { transform: translateY(1px); }
+.social-btn svg { width: 19px; height: 19px; flex: none; }
+.social-btn--facebook { background: #1877f2; border-color: #1877f2; color: #fff; }
+.social-btn--facebook:hover { background: #0f68df; border-color: #0f68df; }
+
+.otp-step {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.otp-step__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--green-50, rgba(27, 133, 96, 0.1));
+  color: var(--green-600);
+  place-items: center;
+}
+
+.otp-step__icon svg { width: 21px; height: 21px; }
+.otp-step h3 { margin: 0; font-size: 1rem; }
+.otp-step__copy { margin: 0; color: var(--muted); font-size: 0.81rem; }
+
+.otp-demo-code {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem;
+  border: 1px dashed color-mix(in oklab, var(--gold) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--gold) 8%, transparent);
+}
+
+.otp-demo-code span {
+  color: var(--muted);
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.otp-demo-code strong {
+  color: var(--gold-2, #b8860b);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 1.55rem;
+  letter-spacing: 0.32em;
+}
+
+.otp-input {
+  text-align: center;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 1.2rem;
+  letter-spacing: 0.28em;
+}
+
+.otp-resend { justify-self: center; font-size: 0.78rem; }
+.otp-back { margin-top: -0.2rem; }
+
 .info-modal { width: min(400px, 92vw); }
 .info-modal__panel {
   display: grid; gap: 0.7rem; text-align: center;

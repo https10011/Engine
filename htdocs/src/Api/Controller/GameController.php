@@ -10,9 +10,9 @@ use CasinoEngine\Api\Http\Response;
 use CasinoEngine\Api\Presenter\GamePresenter;
 use CasinoEngine\Api\Presenter\ThemeCatalogue;
 use CasinoEngine\Core\Contract\GameCategory;
-use CasinoEngine\Core\Contract\GameMetadataInterface;
 use CasinoEngine\Core\Exception\ValidationException;
 use CasinoEngine\Core\Registry\GameRegistryInterface;
+use CasinoEngine\Services\Admin\GameControlService;
 
 /**
  * Game discovery and metadata.
@@ -24,8 +24,10 @@ use CasinoEngine\Core\Registry\GameRegistryInterface;
  */
 final class GameController extends AbstractController
 {
-    public function __construct(private readonly GameRegistryInterface $registry)
-    {
+    public function __construct(
+        private readonly GameRegistryInterface $registry,
+        private readonly GameControlService $controls
+    ) {
     }
 
     /**
@@ -44,13 +46,16 @@ final class GameController extends AbstractController
             $games = $this->registry->byCategory($enum);
         }
 
-        $items = array_map(
-            static fn (GameMetadataInterface $metadata): array => $metadata->toArray(),
-            $games
-        );
+        $items = [];
+        foreach ($games as $metadata) {
+            if (!$this->controls->isAvailable($metadata->id())) {
+                continue;
+            }
+            $items[] = $metadata->toArray();
+        }
 
         return Response::ok(
-            ['games' => array_values($items)],
+            ['games' => $items],
             200,
             ['count' => count($items)]
         );
@@ -62,6 +67,7 @@ final class GameController extends AbstractController
     public function show(array $parameters, Request $request, RequestContext $context): Response
     {
         $game = $this->registry->get($parameters['gameId'] ?? '');
+        $this->assertAvailable($game->metadata()->id());
 
         return Response::ok([
             'game'          => $game->metadata()->toArray(),
@@ -83,6 +89,7 @@ final class GameController extends AbstractController
     public function presentation(array $parameters, Request $request, RequestContext $context): Response
     {
         $game = $this->registry->get($parameters['gameId'] ?? '');
+        $this->assertAvailable($game->metadata()->id());
 
         $presenter = new GamePresenter($game, $game->defaultConfiguration()->toArray());
 
@@ -116,7 +123,7 @@ final class GameController extends AbstractController
         // metadata list, so a disabled module is filtered here rather than in
         // the registry, which needs the full set for lookups.
         foreach ($games as $metadata) {
-            if (!$metadata->isEnabled()) {
+            if (!$metadata->isEnabled() || !$this->controls->isAvailable($metadata->id())) {
                 continue;
             }
 
@@ -127,5 +134,12 @@ final class GameController extends AbstractController
         }
 
         return Response::ok(['games' => $cards], 200, ['count' => count($cards)]);
+    }
+
+    private function assertAvailable(string $gameId): void
+    {
+        if (!$this->controls->isAvailable($gameId)) {
+            throw new ValidationException('This game is currently unavailable.');
+        }
     }
 }

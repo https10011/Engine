@@ -127,7 +127,7 @@ Native `<dialog>` with `.modal`:
 
 * `.tile` — 1:1 art area + green label bar + provider line; hover lifts 2px and reveals
   a gold border; focus-ring keyboard accessible.
-* `.tile__art` — generated SVG, lazy-loaded, with `HOT` and RTP badges in the corners.
+* `.tile__art` — local AH77 WebP artwork (or a generated fallback), lazy-loaded, with `HOT` and RTP badges in the corners.
 * `.tile--table` — same tile for non-slot categories.
 * `.shelf__rail` — horizontal scroll with snap and hidden scrollbar; 2.2–3.2 cards
   visible on phones.
@@ -174,7 +174,9 @@ uppercase pills; game pages override them to translucent dark surfaces.
 | Dialog | 180ms fade + 12px rise |
 | Banner slide | 480ms cubic-bezier |
 | Toast | 170ms fade-in, 4s hold |
-| Reel result | per-cell fade/dim, 900ms before readout |
+| Reel result | per-column blur/translate, staggered stop, 900ms before readout |
+| Big win | overlay with server payout/tier, rotating rays, falling coins, 1.2s |
+| Card deal | 3D flip/deal-in, staggered; hole card flips when revealed |
 | Coin flip | 900ms flip (two turns) + 520ms landing |
 | Roulette | 2.4s wheel spin, result badge pops |
 

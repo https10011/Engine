@@ -36,10 +36,11 @@ the project overview and quick start are in [README.md](../README.md).
 | [FRONTEND_ARCHITECTURE.md](frontend/FRONTEND_ARCHITECTURE.md) | modules, router, state, API flow |
 | [DESIGN_SYSTEM.md](frontend/DESIGN_SYSTEM.md) | tokens, type, components, motion, a11y |
 | [COMPONENT_CATALOG.md](frontend/COMPONENT_CATALOG.md) | every component and state |
+| [ADMIN_PANEL.md](frontend/ADMIN_PANEL.md) | standalone operator console: access, pages, game controls, audit |
 | [GAME_INTERFACE_IMPLEMENTATION.md](frontend/GAME_INTERFACE_IMPLEMENTATION.md) | the four interfaces and all 22 modules |
 | [AH77_SOURCE_INVENTORY.md](frontend/AH77_SOURCE_INVENTORY.md) | every file in the supplied mirror, with hashes |
 | [REFERENCE_WEBSITE_ANALYSIS.md](frontend/REFERENCE_WEBSITE_ANALYSIS.md) | what the reference is and what was reused |
-| [ASSET_MAPPING.md](frontend/ASSET_MAPPING.md) | reference asset groups → generated AURUM assets |
+| [ASSET_MAPPING.md](frontend/ASSET_MAPPING.md) | AH77_SOURCE asset mapping → local WebP game/banner art |
 | [RESOURCE_GAP_ANALYSIS.md](frontend/RESOURCE_GAP_ANALYSIS.md) | reference vs engine catalogue |
 | [MISSING_GAME_ASSETS.md](frontend/MISSING_GAME_ASSETS.md) | placeholder art and replacement paths |
 | [SECURITY_AUDIT.md](frontend/SECURITY_AUDIT.md) | audit of the untrusted reference export |

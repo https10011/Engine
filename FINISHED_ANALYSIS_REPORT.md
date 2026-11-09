@@ -10,6 +10,17 @@
 > real-money wagering, cash-out, crypto or payment code. Every balance is a
 > simulated credit.
 
+> **Update 2026-11-09 — private-app refinement.** The figures below describe the
+> 2026-11-08 audit and remain the historical baseline. Since then: registration
+> is phone/display-name/age/password with a local demo OTP and exactly 300
+> credits; `/admin.php` replaces the SPA admin view with a standalone console
+> for users, audited credits, suspension, game availability and odds/friendly
+> play; database credentials use `config/database.local.php`; 18 AH77_SOURCE
+> WebP derivatives and new animation effects are in the frontend; the suite is
+> **294 tests / 22,836 assertions**. See
+> [PROJECT_STATUS.md](documentation/project/PROJECT_STATUS.md) and
+> [ADMIN_PANEL.md](documentation/frontend/ADMIN_PANEL.md).
+
 ---
 
 ## 1. Executive summary

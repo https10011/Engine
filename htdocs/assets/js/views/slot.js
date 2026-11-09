@@ -11,6 +11,7 @@
 // grid and the wins the server returned.
 
 import { el, mount, money, ratio, providerLabel } from '../lib/dom.js';
+import { gameArt } from '../lib/art.js';
 import { icon } from '../lib/icons.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, applyTheme } from '../lib/ui.js';
@@ -192,6 +193,25 @@ export async function renderSlot(context) {
     setTimeout(() => overlay.remove(), ms);
   }
 
+  function showBigWin(payout, multiplier) {
+    const tier = multiplier >= 100 ? 'MEGA WIN' : multiplier >= 50 ? 'SUPER WIN' : multiplier >= 20 ? 'BIG WIN' : 'NICE WIN';
+    const coins = Array.from({ length: 14 }, (_, index) => el('span', {
+      class: 'overlay__coin',
+      style: { '--i': String(index) },
+      'aria-hidden': 'true',
+    }, '₱'));
+
+    const overlay = el('div', { class: 'overlay overlay--win overlay--celebration' }, [
+      el('div', { class: 'overlay__rays', 'aria-hidden': 'true' }),
+      el('div', { class: 'overlay__coins', 'aria-hidden': 'true' }, coins),
+      el('div', { class: 'overlay__title', text: tier }),
+      el('div', { class: 'overlay__count', text: money(payout, scale, currency) }),
+      el('div', { class: 'overlay__sub', text: `${multiplier.toFixed(1)}× your bet` }),
+    ]);
+    cabinet.append(overlay);
+    setTimeout(() => overlay.remove(), 2800);
+  }
+
   async function ensureSession() {
     if (session) return session;
     const data = await api.createSession(game.id);
@@ -258,11 +278,12 @@ export async function renderSlot(context) {
         message.textContent = 'No win this spin.';
       }
 
-      announceFeatures(round);
+      const jackpot = announceFeatures(round, payout);
 
       if (payout > 0) {
         if (multiplier >= 20) sound.sfx.bigWin();
         else sound.sfx.win(multiplier);
+        if (!jackpot && multiplier >= 15) showBigWin(payout, multiplier);
       } else if (!free) {
         sound.sfx.lose();
       }
@@ -287,7 +308,8 @@ export async function renderSlot(context) {
     }
   }
 
-  function announceFeatures(round) {
+  function announceFeatures(round, payout) {
+    let jackpot = false;
     for (const feature of round.features || []) {
       if (feature.type === 'free_spins' && feature.status === 'started') {
         const count = feature.remaining ?? '';
@@ -295,10 +317,13 @@ export async function renderSlot(context) {
         sound.sfx.bigWin();
       }
       if (feature.type === 'jackpot' && feature.status === 'started') {
-        showOverlay('feature', 'JACKPOT', 'Congratulations!', 2600);
+        jackpot = true;
+        const tier = feature.detail?.tier ? String(feature.detail.tier).toUpperCase() + ' JACKPOT' : 'JACKPOT';
+        showOverlay('jackpot', tier, money(payout, scale, currency), 3000);
         sound.sfx.bigWin();
       }
     }
+    return jackpot;
   }
 
   function updateSpinLabel() {
@@ -444,7 +469,7 @@ export async function renderSlot(context) {
         scatters.length ? el('li', {}, [el('strong', { text: 'Scatter: ' }), scatters.join(', ') + ' pays anywhere and can trigger a feature.']) : null,
         features.length ? el('li', {}, [el('strong', { text: 'Features: ' }), features.join(', ') + '.']) : null,
       ]),
-      el('p', { class: 'muted', text: 'Every result is produced by the engine. The game is a simulation played with virtual credits; there is no real-money play.' }),
+      el('p', { class: 'muted', text: 'Choose your bet, set the reels in motion and see where they land.' }),
     ]);
   }
 
@@ -510,7 +535,7 @@ export async function renderSlot(context) {
 
   const stage = el('div', { class: 'slot__stage' }, [
     el('div', { class: 'slot__head' }, [
-      el('img', { class: 'slot__art', src: `/assets/games/${game.id}.svg`, alt: '', width: '46', height: '46' }),
+      el('img', { class: 'slot__art', src: gameArt(game.id), alt: '', width: '46', height: '46' }),
       el('div', { class: 'slot__titles' }, [
         el('span', { class: 'slot__name', text: game.name }),
         el('span', { class: 'slot__provider', text: providerLabel(game.provider) }),

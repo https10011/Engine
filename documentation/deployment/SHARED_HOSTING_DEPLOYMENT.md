@@ -1,10 +1,10 @@
 # Shared Hosting Deployment
 
 > The complete deployable application is in **`htdocs/`**. Upload its *contents*
-> to a conventional PHP/MySQL host, set the database values in `.env`, import
-> `database/install.sql`, and open the site. No Node.js, Python, Docker,
-> Composer, external API, CDN, WebSocket or background worker is required at
-> runtime.
+> to a conventional PHP/MySQL host, set the database values in
+> `config/database.local.php`, import `database/install.sql`, and open the site.
+> No Node.js, Python, Docker, Composer, external API, CDN, WebSocket or
+> background worker is required at runtime.
 >
 > **Virtual credits only.** There is no deposit, withdrawal, payment or crypto
 > code, and therefore nothing of that kind to configure.
@@ -17,7 +17,9 @@ PATH="$HOME/bin:$PATH" php tools/build_htdocs.php
 ```
 
 The build refuses to delete a directory it did not create (it looks for
-`.htdocs-build`) and preserves an existing `htdocs/.env`.
+`.htdocs-build`) and preserves existing `htdocs/.env` and
+`htdocs/config/database.local.php` files, so deployment credentials are not
+lost when the bundle is rebuilt.
 
 ---
 
@@ -53,10 +55,15 @@ PHP_CodeSniffer, Playwright) are not in `htdocs/`.
 ```
 htdocs/                      <-- upload the CONTENTS of this directory
 ├── index.php                front controller: API + SPA shell
+├── admin.php                dedicated administrator console
 ├── app.html                 single-page application shell
-├── assets/                  CSS, ES modules, SVG artwork (served directly)
+├── assets/                  CSS, ES modules, SVG/WebP artwork (served directly)
 ├── src/                     PHP engine, games, API, CLI commands   [private]
-├── config/app.php           defaults; overridden by .env          [private]
+├── config/
+│   ├── app.php              application defaults                  [private]
+│   ├── database.php         committed loader, no credentials      [private]
+│   ├── database.local.example.php  copy-to-configure template      [private]
+│   └── database.local.php   real credentials, Git-ignored          [private]
 ├── database/
 │   ├── install.sql          complete fresh-database schema
 │   └── migrations/*.sql     incremental migrations                [private]
@@ -64,7 +71,7 @@ htdocs/                      <-- upload the CONTENTS of this directory
 ├── bin/console              CLI (migrate, users, purge)           [private]
 ├── storage/logs|cache/      only writable paths                   [private]
 ├── .htaccess                routing, security headers, caching
-├── .env.example             copy to .env and fill in
+├── .env.example             optional app/runtime settings
 └── README.md                short operator quickstart             [private]
 ```
 
@@ -87,32 +94,31 @@ subdomain such as `casino.example.com` instead.
    database name, user name and password.
 2. **Upload.** Upload the *contents* of `htdocs/` into `public_html/` (or the
    subdomain root), preserving directories.
-3. **Configure.** Copy `.env.example` to `.env` and set at least:
+3. **Configure the database.** Copy
+   `config/database.local.example.php` to `config/database.local.php` and fill
+   in the host, port, database name, username, password and charset supplied by
+   AeonFree. The committed `config/database.php` loads that local file; it
+   contains no credentials itself. `.env` is **not** required for the database.
+   Environment variables (`DB_HOST`, `DB_DATABASE`, ...) still take precedence
+   when a host injects them.
 
-   | Variable | Example |
-   | --- | --- |
-   | `APP_ENV` | `production` |
-   | `APP_DEBUG` | `false` |
-   | `APP_URL` | `https://casino.example.com` |
-   | `DB_HOST` | `localhost` |
-   | `DB_PORT` | `3306` |
-   | `DB_DATABASE` | `account_casino` |
-   | `DB_USERNAME` | `account_engine` |
-   | `DB_PASSWORD` | the database password |
-
-   Keep `DB_CHARSET=utf8mb4` and `DB_COLLATION=utf8mb4_unicode_ci`. Leave
-   `PASSWORD_ALGO=argon2id`; the engine automatically uses bcrypt if the host's
-   PHP build has no Argon2 support, and records that per user.
+   Keep `charset` as `utf8mb4`. The application's PDO connection is unchanged:
+   `Connection.php` receives these values through the normal configuration
+   service.
 4. **Import the schema.** In phpMyAdmin select the database → **Import** →
-   `database/install.sql` → Go. This creates 19 tables and records all five
-   migrations, so the runtime reports the schema as current. Import once into
-   an empty database.
+   `database/install.sql` → Go. This creates the complete schema, the
+   `game_controls` table, the initial administrator and all migration ledger
+   entries. Import once into an empty database.
 5. **Permissions.** `storage/` must be writable by PHP:
    `chmod -R 775 storage`. On hosts running PHP as a different user, set
    ownership accordingly or use `777` only on `storage/logs` and
    `storage/cache` if the host requires it. Nothing else needs write access.
-6. **Visit the site.** Register a player. The lobby is public; opening a game
-   requires an account.
+6. **Visit the site.** Register a player with a phone number, display name, age
+   and password. The first grant is exactly 300 credits. The OTP step is a
+   local demonstration: a browser notification displays a six-digit code, any
+   six digits are accepted, and no SMS is sent.
+7. **Sign in to the administrator console** at `/admin.php` with the seeded
+   initial account `admin` / `Tyroar123`, then change the password (see below).
 
 ### Alternative schema import (SSH)
 
@@ -123,20 +129,39 @@ method or the other, not both. `php bin/console db:status` must then print
 
 ### First administrator
 
-Register a normal account in the browser, then either:
+`database/install.sql` seeds one administrator, separately from player accounts:
+
+| Field | Initial value |
+| --- | --- |
+| Username | `admin` |
+| Password | `Tyroar123` |
+
+The password is stored only as a bcrypt hash in `user_credentials`; the
+plaintext is not in the repository, the frontend or any configuration file.
+The role is re-read from the database on every admin request, and ordinary
+players cannot sign in to `/admin.php` even with valid player credentials.
+
+**Change the initial password immediately.** There is no public password-reset
+flow. On a host with SSH:
 
 ```bash
-php bin/console user:admin --username=your_username
+php bin/console user:password --username=admin --password='a-new-long-password'
 ```
 
-or, without SSH, in phpMyAdmin:
+Without SSH, generate a bcrypt hash with `php -r
+'echo password_hash("a-new-long-password", PASSWORD_BCRYPT), PHP_EOL;'` and
+update `user_credentials.password_hash` for the `admin` row in phpMyAdmin.
+
+Alternatively, if you want a second administrator, promote an existing player
+in phpMyAdmin:
 
 ```sql
-UPDATE users SET role = 'admin' WHERE username = 'your_username';
+UPDATE users SET role = 'admin' WHERE phone = '+639171234567';
 ```
 
-The Admin entry then appears in the account drawer. The role is read from the
-database on every request; no client value can grant it.
+The Admin link in the player account drawer opens `/admin.php` safely; the page
+still asks for the administrator credentials. No frontend role flag grants
+access.
 
 ### Health check
 
@@ -168,10 +193,12 @@ Configuration precedence: real environment variables → `.env` → defaults in
 | `API_TOKEN_TTL_SECONDS` | `86400` | bearer-token lifetime |
 | `API_RATE_LIMIT_PER_MINUTE` | `120` | database-backed rate limit |
 | `ALLOW_SELF_REGISTRATION` | `true`/`false` | close public sign-ups if desired |
-| `REGISTRATION_STARTING_BALANCE_MINOR` | `100000` | ₱1,000 virtual starting credit |
+| `REGISTRATION_STARTING_BALANCE_MINOR` | `30000` | exactly 300 credits on first registration |
 
-`.env` is gitignored and denied over HTTP. Never commit it, and never put the
-database password in `config/app.php`.
+Database credentials belong in `config/database.local.php` (gitignored and
+denied over HTTP), never in the committed `config/database.php`,
+`config/app.php` or `.env.example`. `.env` remains optional for non-secret
+runtime settings and is also denied over HTTP.
 
 ---
 
@@ -232,9 +259,10 @@ Do not expose `src/`, `config/`, `database/`, `vendor/`, `storage/` or `bin/`.
 
 Because `htdocs/` is generated:
 
-1. Back up the database and the server's `.env`.
+1. Back up the database and the server's `config/database.local.php` (and
+   `.env`, if used).
 2. Build a new `htdocs/` locally from the new revision.
-3. Upload the new files, keeping the server's `.env`.
+3. Upload the new files, keeping the server's `config/database.local.php`.
 4. Apply any new migrations with `php bin/console db:migrate`, then
    `php bin/console db:status` (must report no drift).
 5. Clear the browser cache if the asset filenames changed.
@@ -252,10 +280,11 @@ an already-applied migration changed. Never edit a migration after applying it.
 | 403 on every route | `mod_rewrite` unavailable (`.htaccess` fails closed) | enable `mod_rewrite`, or apply the Nginx rules |
 | 404 on `/api/v1/...` | rewrite not active | same as above; confirm `.htaccess` was uploaded |
 | CSS/JS 404 | uploaded into a subdirectory, or `assets/` missing | install at the domain root; re-upload `assets/` |
-| “Could not connect to the database” | wrong `.env` values or DB user lacks privileges | recheck host/name/user; grant privileges on that schema |
+| “Could not connect to the database” | wrong `config/database.local.php` values or DB user lacks privileges | recheck host/port/name/user; grant privileges on that schema |
 | Login works, games fail | schema incomplete | re-import `install.sql` into an empty DB, or run `db:migrate` |
 | “Dependencies are not installed” | `htdocs/vendor/` missing | re-upload the build; do not run Composer on the host |
-| Admin menu missing | account is not an admin | grant `role='admin'` (see above) |
+| `/admin.php` rejects valid credentials | account role is not `admin`, or account is suspended | check `users.role` / `users.status`; see the administrator section |
+| Admin page lists no games | deployment is missing `src/Games` or discovery failed | re-upload the complete `htdocs/` tree; check `storage/logs/engine.log` |
 | Changes not visible | browser cache / old files | hard refresh; verify file timestamps |
 
 ---
@@ -263,9 +292,11 @@ an already-applied migration changed. Never edit a migration after applying it.
 ## 9. Security checklist
 
 * `APP_ENV=production`, `APP_DEBUG=false`, HTTPS enabled.
-* `.env` exists on disk, is not in Git, and is not downloadable.
+* `config/database.local.php` exists on disk, is not in Git, and is not
+  downloadable.
 * `https://site/src/Core/Bootstrap.php`, `/config/app.php`,
-  `/database/install.sql`, `/vendor/autoload.php`, `/.env` all return 403/404.
+  `/config/database.local.php`, `/database/install.sql`,
+  `/vendor/autoload.php`, `/.env` all return 403/404.
 * `storage/` writable, everything else read-only to the web user.
 * Database user limited to this schema.
 * No test tooling, source exports, screenshots or documentation in the web root.
@@ -281,12 +312,15 @@ Details and residual risks: [PRODUCTION_SECURITY.md](PRODUCTION_SECURITY.md) and
 Verified locally against the generated `htdocs/` tree:
 
 * PHP 8.3 built-in server as the production entry point, fresh MariaDB 10.11
-  database imported from `database/install.sql` (19 tables, five migrations,
-  no drift).
+  database imported from `database/install.sql` (complete schema, eight
+  migrations, no drift).
 * `/`, `/assets/css/app.css` and `/api/v1/games/lobby` returned 200 with the
   correct content types; 22 games listed.
-* Registration (201), login, token-authenticated `/auth/me` (200), both
-  Argon2id and bcrypt hashing.
+* Phone registration with demo OTP (201, exactly 300 credits), duplicate-phone
+  rejection, phone login, token-authenticated `/auth/me` (200), both Argon2id
+  and bcrypt hashing. The administrator console was exercised for login,
+  dashboard, user search/detail, credit adjustment, suspend/reactivate,
+  game save/reset, CSRF rejection and logout.
 * Real mobile and desktop Chromium flows against the production tree: login,
   slot spin, blackjack deal, roulette spin, coin flip and search, with five
   settled rounds recorded in the production database and no console errors.

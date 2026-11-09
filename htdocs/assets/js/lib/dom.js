@@ -90,5 +90,8 @@ export function percent(value) {
  */
 export function providerLabel(provider) {
   const first = String(provider || '').split('/')[0].replace(/\([^)]*\)/g, '').trim();
-  return first || 'Engine Original';
+  if (first === '' || /\bengine\b/i.test(first)) {
+    return 'Aurum Originals';
+  }
+  return first;
 }

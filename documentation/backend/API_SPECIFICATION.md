@@ -69,14 +69,18 @@ revoked by logout.
 POST /api/v1/auth/login
 Content-Type: application/json
 
-{ "username": "owner", "password": "…" }
+{ "identifier": "0917 123 4567", "password": "…" }
 ```
+
+`identifier` accepts a player phone number in any common form (`09…`, `9…`,
+`+63…`, or an international number). The older `username` field is still
+accepted for administrator/console-created accounts.
 
 ```json
 {
   "ok": true,
   "data": {
-    "user": { "id": 1, "username": "owner", "display_name": "Owner" },
+    "user": { "id": 1, "username": "p_639171234567_ab12cd", "phone": "+639171234567", "display_name": "Owner", "age": 25, "role": "player" },
     "token": "…",
     "expires_at": "2026-11-08T10:00:00+00:00",
     "balance": { "amount": 100000, "currency": "PHP", "scale": 2, "formatted": "₱1000.00" }
@@ -86,7 +90,7 @@ Content-Type: application/json
 }
 ```
 
-A wrong password and an unknown username return the **same** 401 message, so the
+A wrong password and an unknown account return the **same** 401 message, so the
 endpoint cannot be used to enumerate accounts. A successful and a failed login
 are both written to the audit trail (without the password).
 
@@ -96,7 +100,13 @@ are both written to the audit trail (without the password).
 POST /api/v1/auth/register
 Content-Type: application/json
 
-{ "username": "player1", "password": "at-least-10-chars", "display_name": "Player One" }
+{
+  "phone": "0917 123 4567",
+  "display_name": "Player One",
+  "age": 25,
+  "password": "at-least-10-chars",
+  "otp": "123456"
+}
 ```
 
 The response has the same shape as a successful login (`201`):
@@ -105,10 +115,10 @@ The response has the same shape as a successful login (`201`):
 {
   "ok": true,
   "data": {
-    "user": { "id": 7, "username": "player1", "display_name": "Player One", "role": "player" },
+    "user": { "id": 7, "username": "p_639171234567_ab12cd", "phone": "+639171234567", "display_name": "Player One", "age": 25, "role": "player" },
     "token": "…",
     "expires_at": "2026-11-08T10:00:00+00:00",
-    "balance": { "amount": 100000, "currency": "PHP", "scale": 2, "formatted": "₱1000.00" }
+    "balance": { "amount": 30000, "currency": "PHP", "scale": 2, "formatted": "₱300.00" }
   },
   "error": null,
   "meta": {}
@@ -117,15 +127,23 @@ The response has the same shape as a successful login (`201`):
 
 Rules:
 
-* username must match `^[A-Za-z0-9._-]{3,64}$` and be unique;
+* phone is required and canonicalised (for the Philippines: `09…`, `9…` and
+  `+63…` all become `+639…`); the unique index prevents duplicate accounts
+  entered with different spacing or prefixes;
+* display name 2–64 characters;
+* age 18–120;
 * password 10–128 characters;
-* display name at most 64 characters (defaults to the username);
-* user and virtual wallet are created in one transaction;
-* no payment, deposit or email step exists.
+* `otp` must contain exactly six numeric digits. **This is a local demo, not
+  phone ownership verification:** the browser shows a generated code, any six
+  digits are accepted, and no SMS or third-party service is involved;
+* no username is chosen by the player. An internal unique key
+  (`p_<phone digits>_<random>`) is generated for the database;
+* user, credentials and virtual wallet are created in one transaction.
 
-The starting balance is `REGISTRATION_STARTING_BALANCE_MINOR` (default `100000` = PHP
-1,000.00). Set `ALLOW_SELF_REGISTRATION=false` to disable the route; operators can still
-provision accounts with the `user:create` console command.
+The starting balance is `REGISTRATION_STARTING_BALANCE_MINOR` (default `30000` =
+exactly 300 credits), granted only by this creation transaction, so retrying
+registration cannot grant it again. Set `ALLOW_SELF_REGISTRATION=false` to
+disable the route; operators can still provision accounts with the CLI.
 
 | Route | Auth | Returns |
 | --- | --- | --- |

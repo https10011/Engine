@@ -16,6 +16,7 @@ php bin/console games:list                    # every registered game
 php bin/console games:show --game=<id>        # metadata + config for one game
 php bin/console user:create --username=<n> --password=<p> --balance=100000
 php bin/console user:admin --username=<n>     # grant/revoke admin role
+php bin/console user:password --username=<n> --password=<p>  # rotate password
 php bin/console serve                         # dev HTTP server (development only)
 php bin/engine-simulate sim:run --game=<id> --rounds=N --seed=S
 
@@ -30,8 +31,8 @@ PATH="$HOME/bin:$PATH" php tools/build_htdocs.php   # rebuild the deployable htd
   `RoundService` settles a round.
 * Randomness comes only from `$context->rng()`. Never `rand()`/`mt_rand()`.
 * Repositories are the only classes that write SQL.
-* The 168 pre-existing engine tests must keep passing; the suite currently
-  holds 277 tests (22,791 assertions).
+* The pre-existing engine tests must keep passing; the suite currently holds
+  294 tests (22,836 assertions).
 * `htdocs/` is generated. Change the source tree and rebuild; never hand-edit
   the production bundle.
 
@@ -45,7 +46,7 @@ PATH="$HOME/bin:$PATH" php tools/build_htdocs.php   # rebuild the deployable htd
 | `src/Probability/` | the global/per-game odds governor and profiles |
 | `src/Simulation/` | streaming statistics and the simulation driver |
 | `src/Api/` | HTTP controllers and routing |
-| `public/` | development document root: player frontend (`app.html`, `assets/`), `/admin` route |
+| `public/` | development document root: player frontend (`app.html`, `assets/`) and standalone `admin.php` console |
 | `htdocs/` | generated, self-contained production tree for shared hosting |
 | `documentation/backend/games/` | one specification per target game (18 files) |
 | `tests/Integration/AllGamesIntegrationTest.php` | asserts the 18 target games run end to end |
@@ -62,8 +63,9 @@ and the root `FINISHED_ANALYSIS_REPORT.md`.
 
 * The round response envelope is `data.round`; money fields are objects
   (`{amount, currency, scale, formatted}`), not bare integers.
-* The admin API is versioned under `/api/v1/admin/*`; check the route table
-  before guessing a path.
+* The standalone administrator console is `/admin.php` (separate PHP session).
+  Legacy administrator API routes remain under `/api/v1/admin/*`; check the
+  route table before guessing a path.
 * `storage/` is fully git-ignored, so dev databases and simulation output never
   reach the repository.
 * Statistical reporting must stay honest: `observed_rtp` is a ratio of sums and

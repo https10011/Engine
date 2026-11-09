@@ -21,7 +21,7 @@ export async function renderHistory(context) {
   const layout = el('div', { class: 'history' }, [
     el('section', { class: 'hero' }, [
       el('h1', { text: 'Your play' }),
-      el('p', { text: 'Every round the engine settled for this account, and every movement in the simulated-credit wallet.' }),
+      el('p', { text: 'Every round you have played, and every change to your balance.' }),
     ]),
     el('div', { class: 'panel' }, [
       el('h2', { text: 'Recent rounds' }),

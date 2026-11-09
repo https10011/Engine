@@ -12,6 +12,7 @@
 
 import { el, mount, providerLabel } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
+import { gameArt } from '../lib/art.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, emptyState } from '../lib/ui.js';
 import * as store from '../lib/store.js';
@@ -22,30 +23,34 @@ const RECENT_LIMIT = 8;
 
 const CATEGORY_LABEL = { slot: 'Slots', card: 'Table games', roulette: 'Roulette' };
 
-// Original promotional copy. No deposits, bonuses or prizes are promised
-// because the engine has no payment rail and no real-money value.
+// Artwork for the carousel is cropped from the original AH77 promotional
+// banners; only the character art is used, with the lobby supplying its own
+// copy. No promotional deposit claims travel with the images.
 const SLIDES = [
   {
-    kicker: 'Virtual credits',
-    title: 'The floor is open. <em>Every result is server-settled.</em>',
-    sub: 'Twenty-two games, one virtual wallet, nothing to deposit.',
+    kicker: 'Welcome to Aurum',
+    title: 'Your table is ready. <em>Pull up a chair.</em>',
+    sub: 'Slots, tables and roulette, all in one place.',
     cta: 'Explore the games',
     href: '/slots',
+    art: '/assets/banners/feature-super-ace.webp',
   },
   {
-    kicker: 'New accounts',
-    title: 'Start with <em>1,000.00 credits</em>. No card, ever.',
-    sub: 'Create a player account and the engine opens a virtual wallet for it.',
+    kicker: 'New players',
+    title: 'Start with <em>300 credits</em>.',
+    sub: 'Create your account in a minute and take a seat.',
     cta: 'Create an account',
     action: 'open-register',
+    art: '/assets/banners/feature-gifts.webp',
   },
   {
-    kicker: 'How it works',
-    title: 'The browser never <em>decides an outcome</em>.',
-    sub: 'Each bet is posted to the engine, settled with the game module, and returned as a round.',
-    cta: 'See how play settles',
+    kicker: 'Private lobby',
+    title: 'Good games, <em>good company.</em>',
+    sub: 'A relaxed lobby built for you and your friends.',
+    cta: 'See your play',
     href: '/history',
     requiresAuth: true,
+    art: '/assets/banners/feature-roulette.webp',
   },
 ];
 
@@ -153,9 +158,9 @@ export async function renderLobby(context) {
 
     mount(results, [
       recent.length ? shelf('Continue playing', 'Your last few titles on this device', recent) : null,
-      shelf('Biggest max win', 'Highest multiplier the engine reports', topWin),
-      shelf('Slot games', `${slots.length} titles with their own math`, slots),
-      shelf('Tables & roulette', `${tables.length} games dealt by the engine`, tables),
+      shelf('Biggest max win', 'The biggest wins on the floor', topWin),
+      shelf('Slot games', `${slots.length} slots to choose from`, slots),
+      shelf('Tables & roulette', `${tables.length} games at the tables`, tables),
       el('div', { class: 'section' }, [
         el('div', { class: 'shelf__head' }, [
           el('h2', { class: 'shelf__title', text: 'All games' }),
@@ -189,7 +194,7 @@ export async function renderLobby(context) {
       onClick: () => open(game),
     }, [
       el('span', { class: 'tile__art' }, [
-        el('img', { src: `/assets/games/${game.id}.svg`, alt: '', loading: 'lazy', width: '300', height: '300' }),
+        el('img', { src: gameArt(game.id), alt: '', loading: 'lazy', width: '300', height: '300' }),
         hot ? el('span', { class: 'tile__hot', text: 'HOT' }) : null,
         el('span', { class: 'tile__rtp', text: `${(Number(game.rtp) * 100).toFixed(1)}%` }),
       ]),
@@ -205,9 +210,9 @@ export async function renderLobby(context) {
     }, {});
 
     return el('div', { class: 'trust' }, [
-      trust('shield', 'Server-settled rounds', 'The browser posts an action; the engine returns the outcome.'),
-      trust('lock', 'Virtual credits only', 'No deposits, withdrawals, purchases or real-money prizes.'),
-      trust('bolt', `${games.length} games, one wallet`, `${counts.slot || 0} slots, ${counts.card || 0} card games and ${counts.roulette || 0} roulette titles.`),
+      trust('shield', 'Settled instantly', 'Every round is handled the moment you play.'),
+      trust('lock', 'Your account, your history', 'Your balance and past rounds stay with you.'),
+      trust('bolt', `${games.length} games, one balance`, `${counts.slot || 0} slots, ${counts.card || 0} card games and ${counts.roulette || 0} roulette titles.`),
     ]);
   }
 
@@ -247,7 +252,7 @@ export async function renderLobby(context) {
       'aria-roledescription': 'slide',
       'aria-label': `${index + 1} of ${SLIDES.length}`,
     }, [
-      el('img', { class: 'banner__art', src: `/assets/banners/slide-${index + 1}.svg`, alt: '', fetchpriority: index === 0 ? 'high' : 'low' }),
+      el('img', { class: 'banner__art', src: item.art, alt: '', fetchpriority: index === 0 ? 'high' : 'low' }),
       el('div', { class: 'banner__copy' }, [
         el('span', { class: 'banner__kicker', text: item.kicker }),
         el('h2', { class: 'banner__title', html: item.title }),

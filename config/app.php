@@ -87,8 +87,8 @@ return [
         // Self-service player registration. Additive to the API; an operator
         // can close it and keep provisioning accounts with `user:create`.
         'allow_self_registration'   => true,
-        // Virtual credits granted to a new account (minor units; 100000 = PHP 1,000.00).
-        'registration_starting_balance_minor' => 100000,
+        // Credits granted to a new account (minor units; 30000 = 300.00 credits).
+        'registration_starting_balance_minor' => 30000,
         // Retention windows for the `*:purge` cron commands. Kept here so an
         // operator tunes them by environment variable, not by editing SQL.
         'audit_retention_days'      => 90,

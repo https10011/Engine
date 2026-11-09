@@ -6,6 +6,28 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — private-app refinement (2026-11-09)
+- Phone-based player registration (phone, display name, age, password), canonical
+  `+63` phone storage and a unique index; internal usernames are generated and
+  never chosen by players. First grant is exactly 300 credits, once.
+- Local demo OTP registration step with browser notification and in-app fallback;
+  exactly six numeric digits are required, any six are accepted, and no SMS or
+  third-party provider is involved.
+- Google/Facebook "Continue with …" presentation buttons.
+- `config/database.php` loader plus git-ignored `config/database.local.php`;
+  the production bundle no longer requires database values in `.env`.
+- Standalone `/admin.php`: dashboard, player search/detail, audited credit
+  adjustments, suspend/reactivate, game availability, odds/jackpot/bonus
+  controls, friendly-play preset, audit trail, CSRF, session regeneration,
+  lockout and secure logout.
+- `game_controls` table and `GameControlService`, enforced by the game catalogue
+  and session creation.
+- AH77_SOURCE WebP derivatives for 16 slot titles, blackjack card-room art,
+  roulette wheel art and three lobby banner crops; local CSS/JS win, jackpot,
+  card, roulette and coin effects.
+- `user:password` CLI command for rotating the seeded administrator password.
+- Admin/game-control integration tests and phone normalisation unit tests.
+
 ### Added — AURUM player frontend and shared-hosting bundle (2026-11-08)
 - `public/app.html`, `public/assets/{css,js,games,banners,brand}` — a complete
   mobile-first player interface: catalogue lobby, carousel, category filters,

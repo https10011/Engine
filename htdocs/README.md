@@ -21,32 +21,42 @@ uses root-relative routes such as `/slots/...` and `/api/v1`.
 
 1. Create a MySQL database and user in the hosting panel.
 2. Upload the contents of this directory to `public_html/` (or the domain root).
-3. Copy `.env.example` to `.env` and enter `DB_HOST`, `DB_DATABASE`,
-   `DB_USERNAME`, `DB_PASSWORD`, and the public `APP_URL`.
+3. Copy `config/database.local.example.php` to `config/database.local.php` and
+   fill in the host, port, database, username, password and charset supplied by
+   the hosting panel. This file is Git-ignored and denied over HTTP. Database
+   credentials do **not** go in `.env`.
 4. Import `database/install.sql` with phpMyAdmin (Import → choose file → Go).
 5. Make `storage/` writable by PHP (usually `chmod -R 775 storage`; on some
    hosts the files need to be owned by the PHP user).
-6. Visit the site and register the first player.
+6. Visit the site and register with a phone number, display name, age and
+   password. The account receives exactly 300 credits once. The OTP step is a
+   local demonstration (browser notification, no SMS); any six digits complete
+   it.
+7. Open `/admin.php` and sign in with the seeded administrator `admin` /
+   `Tyroar123`. Change that password immediately.
 
-The database credentials live only in `.env`; it is denied over HTTP and must
-never be committed.
+## 3. Administrator console
 
-## 3. First administrator (optional)
+`/admin.php` is separate from the player SPA. It has its own PHP session,
+server-side role checks on every request, CSRF tokens on every mutation and an
+audit trail. Player credentials cannot be used there.
 
-Register a normal account in the browser, then either run:
+The dashboard shows registered users, recently active players, credits in
+circulation, game activity, recent registrations and rounds. User pages support
+search, detail, audited credit adjustments and suspend/reactivate. The games
+page controls per-game availability, odds targets, jackpot/bonus/free-spin
+probabilities, payout scale and a clearly marked friendly-play preset. Saved
+settings are persisted and used by the engine on the next round.
+
+To change the initial password, use the host terminal:
 
 ```bash
-php bin/console user:admin --username=your_username
+php bin/console user:password --username=admin --password='a-new-long-password'
 ```
 
-or, without SSH, run this once in phpMyAdmin:
-
-```sql
-UPDATE users SET role = 'admin' WHERE username = 'your_username';
-```
-
-The Admin entry then appears in the account drawer. Administrator rights are
-resolved server-side; no client value can grant them.
+Without SSH, generate a bcrypt hash with
+`php -r 'echo password_hash("a-new-long-password", PASSWORD_BCRYPT), PHP_EOL;'`
+and update `user_credentials.password_hash` for the `admin` row in phpMyAdmin.
 
 ## 4. CLI on the host
 
@@ -57,6 +67,7 @@ php bin/console db:status
 php bin/console db:migrate
 php bin/console user:create --username=player --password='a-long-password'
 php bin/console user:admin --username=player
+php bin/console user:password --username=admin --password='a-new-long-password'
 ```
 
 Cron jobs (optional) purge expired rows:
@@ -79,3 +90,5 @@ php bin/console audit:purge
   authentication uses random bearer tokens stored only as SHA-256 hashes.
 * Close public registration with `ALLOW_SELF_REGISTRATION=false` if accounts
   should be invite-only.
+* Keep `config/database.local.php` out of Git and out of web-accessible paths;
+  the shipped `config/.htaccess` denies it.

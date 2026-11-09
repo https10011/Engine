@@ -19,7 +19,18 @@ interface AuthServiceInterface
      * @return array{user:array<string,mixed>,token:array{token:string,expires_at:string}}
      * @throws \CasinoEngine\Core\Exception\AuthenticationException
      */
-    public function login(string $username, string $password, ?string $ipAddress = null): array;
+    public function login(string $identifier, string $password, ?string $ipAddress = null): array;
+
+    /**
+     * Verifies a phone number or username and password without issuing a token.
+     *
+     * Used by the dedicated administrator session login, which keeps its
+     * authentication in a PHP session rather than a bearer token.
+     *
+     * @return array<string, mixed>
+     * @throws \CasinoEngine\Core\Exception\AuthenticationException
+     */
+    public function verifyPassword(string $identifier, string $password, ?string $ipAddress = null): array;
 
     /**
      * Issues a token for an already-authenticated user.

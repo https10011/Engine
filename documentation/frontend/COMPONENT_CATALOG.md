@@ -37,12 +37,12 @@ Escape handling. Backdrop click closes. `data-action="close-modal"` is the expli
 
 | Dialog | Selector | Contents | Validation |
 | --- | --- | --- | --- |
-| Log in | `dialog[data-modal="login"]` | brand head, username, password with show/hide, "Keep me signed in", forgot link, register link | username ≥3, password ≥10, server error in `.form__error` |
-| Register | `dialog[data-modal="register"]` | username, display name, password + confirmation, strength meter, terms checkbox | username regex `^[A-Za-z0-9._-]{3,64}$`, password ≥10 and match, terms required |
+| Log in | `dialog[data-modal="login"]` | brand head, phone number, password with show/hide, "Keep me signed in", forgot link, register link, Google/Facebook presentation buttons | valid phone, password ≥10, server error in `.form__error` |
+| Register | `dialog[data-modal="register"]` | phone, display name, age, password + confirmation, strength meter, demo OTP step, Google/Facebook presentation buttons | phone normalises/unique, display name 2–64, age 18–120, password ≥10 and match, OTP exactly six digits |
 | Forgot password | `dialog[data-modal="forgot"]` | explanation that no email rail exists; operator action | — |
-| Account | `dialog[data-modal="account"]` | display name, username, role, balance, links to My play/Admin, sound toggle, sign out | — |
+| Account | `dialog[data-modal="account"]` | display name, phone, age, balance, links to My play/Admin, sound toggle, sign out | — |
 | Search sheet | `dialog[data-modal="search"]` | sticky search input, results list with art/name/provider/RTP, empty state | filters catalogue |
-| Menu drawer | `dialog[data-modal="menu"]` | primary navigation, sound, auth actions, disclaimer | — |
+| Menu drawer | `dialog[data-modal="menu"]` | primary navigation, sound, auth actions | — |
 
 Field components: `.field`, `.field__label`, `.field__control`, `.field__action` (eye),
 `.field__hint`, `.form__error[role="alert"]`, `.strength` bar, `.checkbox`.

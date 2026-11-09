@@ -11,6 +11,7 @@
 // American table would draw the double-zero one without a frontend change.
 
 import { el, mount, money, ratio, providerLabel } from '../lib/dom.js';
+import { gameArt } from '../lib/art.js';
 import { api, ApiError } from '../lib/api.js';
 import { toast, errorState, applyTheme } from '../lib/ui.js';
 import * as store from '../lib/store.js';
@@ -425,7 +426,7 @@ export async function renderRoulette(context) {
       el('li', {}, [el('strong', { text: 'Outside max: ' }), money(rules.max_outside_bet_minor ?? 0, scale, currency)]),
       el('li', {}, [el('strong', { text: 'Round max: ' }), money(rules.max_total_bet_minor ?? 0, scale, currency)]),
     ]),
-    el('p', { class: 'muted', text: 'Right-click a bet, or shift-click it, to remove it. The winning pocket is drawn by the engine.' }),
+    el('p', { class: 'muted', text: 'Right-click a bet, or shift-click it, to remove it. Place your bets when you are ready.' }),
   ]);
 
   const historyStrip = el('div', { class: 'history-strip', 'aria-label': 'Recent winning numbers' });
@@ -453,7 +454,7 @@ export async function renderRoulette(context) {
 
   const layout = el('div', { class: 'table table--roulette' }, [
     el('div', { class: 'slot__head' }, [
-      el('img', { class: 'slot__art', src: `/assets/games/${game.id}.svg`, alt: '', width: '46', height: '46' }),
+      el('img', { class: 'slot__art', src: gameArt(game.id), alt: '', width: '46', height: '46' }),
       el('div', { class: 'slot__titles' }, [
         el('span', { class: 'slot__name', text: game.name }),
         el('span', { class: 'slot__provider', text: providerLabel(game.provider) }),

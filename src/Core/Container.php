@@ -251,6 +251,13 @@ final class Container
                 $c->get(ClockInterface::class)
             );
 
+        $this->factories[\CasinoEngine\Services\Admin\GameControlService::class]
+            = fn (self $c): \CasinoEngine\Services\Admin\GameControlService
+            => new \CasinoEngine\Services\Admin\GameControlService(
+                $c->get(ConnectionInterface::class),
+                $c->get(ClockInterface::class)
+            );
+
         $this->factories[RoundService::class] = fn (self $c): RoundService => new RoundService(
             $c->get(GameRegistryInterface::class),
             $c->get(BettingServiceInterface::class),

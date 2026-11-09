@@ -72,34 +72,47 @@ final class AuthService implements AuthServiceInterface
         return $this->effectivePasswordAlgo;
     }
 
-    public function login(string $username, string $password, ?string $ipAddress = null): array
+    public function login(string $identifier, string $password, ?string $ipAddress = null): array
     {
-        $username = trim($username);
-        if ($username === '' || $password === '') {
-            throw new AuthenticationException('Username and password are required.');
+        $user = $this->verifyPassword($identifier, $password, $ipAddress);
+
+        return [
+            'user'  => $user,
+            'token' => $this->issueToken((int) $user['id']),
+        ];
+    }
+
+    public function verifyPassword(string $identifier, string $password, ?string $ipAddress = null): array
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '' || $password === '') {
+            throw new AuthenticationException('Phone number and password are required.');
         }
 
-        $user = $this->users->findByUsername($username);
+        // A phone number and a legacy/operator username are both accepted. The
+        // phone lookup uses the canonical value, so spacing and 09/+63 forms
+        // resolve to the same account.
+        $phone = PhoneNumber::tryNormalize($identifier);
+        $user = $phone === null ? null : $this->users->findByPhone($phone);
+        $user ??= $this->users->findByUsername($identifier);
+
         if ($user === null || ($user['status'] ?? 'active') !== 'active') {
             // A dummy verify keeps the timing of an unknown user close to that
             // of a known one with a wrong password.
             password_verify($password, '$argon2id$v=19$m=65536,t=4,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-            $this->audit('auth.login.failed', null, $username, $ipAddress);
-            throw new AuthenticationException('Invalid username or password.');
+            $this->audit('auth.login.failed', null, $identifier, $ipAddress);
+            throw new AuthenticationException('Invalid phone number or password.');
         }
 
         $credentials = $this->users->findCredentials((int) $user['id']);
         if ($credentials === null || !password_verify($password, (string) $credentials['password_hash'])) {
-            $this->audit('auth.login.failed', (int) $user['id'], $username, $ipAddress);
-            throw new AuthenticationException('Invalid username or password.');
+            $this->audit('auth.login.failed', (int) $user['id'], $identifier, $ipAddress);
+            throw new AuthenticationException('Invalid phone number or password.');
         }
 
-        $this->audit('auth.login.succeeded', (int) $user['id'], $username, $ipAddress);
+        $this->audit('auth.login.succeeded', (int) $user['id'], $identifier, $ipAddress);
 
-        return [
-            'user'  => $this->publicUser($user),
-            'token' => $this->issueToken((int) $user['id']),
-        ];
+        return $this->publicUser($user);
     }
 
     public function issueToken(int $userId): array
@@ -186,6 +199,9 @@ final class AuthService implements AuthServiceInterface
             'id'           => (int) $user['id'],
             'username'     => (string) $user['username'],
             'display_name' => (string) $user['display_name'],
+            'phone'        => $user['phone'] === null ? null : (string) $user['phone'],
+            'age'          => $user['age'] === null ? null : (int) $user['age'],
+            'status'       => (string) ($user['status'] ?? 'active'),
             // The role is reported so the client can hide the administrator
             // navigation. It is *not* what authorises anything: the admin
             // middleware re-reads the role from the database on every request,

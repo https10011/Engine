@@ -91,9 +91,12 @@ function put(string $path, string $contents): void
     }
 }
 
-// Keep a configured local .env across rebuilds; it is gitignored and is the one
-// file an operator edits in place on the server.
+// Keep configured local secrets across rebuilds. Both files are gitignored and
+// are the ones an operator edits in place on the server.
 $savedEnv = is_file($target . '/.env') ? file_get_contents($target . '/.env') : null;
+$savedDatabaseConfig = is_file($target . '/config/database.local.php')
+    ? file_get_contents($target . '/config/database.local.php')
+    : null;
 
 if (is_dir($target)) {
     if (!is_file($target . '/.htdocs-build')) {
@@ -110,7 +113,7 @@ copyTree($root . '/config', $target . '/config');
 copyTree($root . '/database/migrations', $target . '/database/migrations');
 copyTree($root . '/public/assets', $target . '/assets');
 
-foreach (['index.php', 'app.html'] as $file) {
+foreach (['index.php', 'admin.php', 'app.html'] as $file) {
     if (!copy($root . '/public/' . $file, $target . '/' . $file)) {
         fail("cannot copy public/{$file}");
     }
@@ -162,8 +165,9 @@ put($target . '/.env.example', <<<'ENV'
 # ---------------------------------------------------------------------------
 # AURUM / Universal Casino Game Engine — shared-hosting configuration.
 #
-# Copy this file to `.env` (same directory) and fill in the database values
-# supplied by the hosting control panel. Never commit `.env`.
+# Optional runtime settings. Copy this file to `.env` only if you need to
+# override a non-secret default. Database credentials belong in
+# `config/database.local.php`, NOT here. Never commit `.env`.
 #
 # VIRTUAL CREDITS ONLY. There is no payment, deposit, withdrawal or crypto
 # configuration anywhere in this application.
@@ -184,18 +188,18 @@ LOG_LEVEL=warning
 LOG_CHANNEL=file
 LOG_PATH=storage/logs
 
-# Database supplied by the host. On cPanel/Plesk this is usually localhost,
-# a prefixed database name and a prefixed user name.
-DB_DRIVER=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_DATABASE=your_database_name
-DB_USERNAME=your_database_user
-DB_PASSWORD=your_database_password
-DB_CHARSET=utf8mb4
-DB_COLLATION=utf8mb4_unicode_ci
-DB_ATTR_PERSISTENT=false
-DB_ATTR_EMULATE_PREPARES=false
+# Database settings are read from config/database.local.php. These environment
+# names remain available for hosts that inject them; leave them unset otherwise.
+# DB_DRIVER=mysql
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_DATABASE=your_database_name
+# DB_USERNAME=your_database_user
+# DB_PASSWORD=your_database_password
+# DB_CHARSET=utf8mb4
+# DB_COLLATION=utf8mb4_unicode_ci
+# DB_ATTR_PERSISTENT=false
+# DB_ATTR_EMULATE_PREPARES=false
 
 SESSION_TTL_SECONDS=3600
 SESSION_IDLE_TTL_SECONDS=1800
@@ -216,10 +220,10 @@ IDEMPOTENCY_TTL_SECONDS=86400
 AUDIT_RETENTION_DAYS=90
 RATE_LIMIT_RETENTION_DAYS=7
 
-# Virtual-credit self-registration. Set to false to close public sign-ups and
-# create accounts only with `php bin/console user:create`.
+# Virtual-credit self-registration. Set to false to close public sign-ups.
 ALLOW_SELF_REGISTRATION=true
-REGISTRATION_STARTING_BALANCE_MINOR=100000
+# 30000 minor units = exactly 300.00 credits, granted once at registration.
+REGISTRATION_STARTING_BALANCE_MINOR=30000
 ENV);
 
 // --------------------------------------------------------------- .htaccess
@@ -324,8 +328,9 @@ $sql = <<<'SQL'
 -- Import into an EMPTY database, once. It is not a migration for an existing
 -- installation; use `php bin/console db:migrate` to upgrade one of those.
 --
--- It creates no user account and no demo data. Register the first player in the
--- browser, or use: php bin/console user:create --username=... --password=...
+-- It seeds one administrator (`admin`, bcrypt password hash only) and no
+-- player accounts. Register players in the browser. Change the administrator
+-- password immediately after the first sign-in at /admin.php.
 -- ---------------------------------------------------------------------------
 
 SET NAMES utf8mb4;
@@ -391,32 +396,42 @@ uses root-relative routes such as `/slots/...` and `/api/v1`.
 
 1. Create a MySQL database and user in the hosting panel.
 2. Upload the contents of this directory to `public_html/` (or the domain root).
-3. Copy `.env.example` to `.env` and enter `DB_HOST`, `DB_DATABASE`,
-   `DB_USERNAME`, `DB_PASSWORD`, and the public `APP_URL`.
+3. Copy `config/database.local.example.php` to `config/database.local.php` and
+   fill in the host, port, database, username, password and charset supplied by
+   the hosting panel. This file is Git-ignored and denied over HTTP. Database
+   credentials do **not** go in `.env`.
 4. Import `database/install.sql` with phpMyAdmin (Import → choose file → Go).
 5. Make `storage/` writable by PHP (usually `chmod -R 775 storage`; on some
    hosts the files need to be owned by the PHP user).
-6. Visit the site and register the first player.
+6. Visit the site and register with a phone number, display name, age and
+   password. The account receives exactly 300 credits once. The OTP step is a
+   local demonstration (browser notification, no SMS); any six digits complete
+   it.
+7. Open `/admin.php` and sign in with the seeded administrator `admin` /
+   `Tyroar123`. Change that password immediately.
 
-The database credentials live only in `.env`; it is denied over HTTP and must
-never be committed.
+## 3. Administrator console
 
-## 3. First administrator (optional)
+`/admin.php` is separate from the player SPA. It has its own PHP session,
+server-side role checks on every request, CSRF tokens on every mutation and an
+audit trail. Player credentials cannot be used there.
 
-Register a normal account in the browser, then either run:
+The dashboard shows registered users, recently active players, credits in
+circulation, game activity, recent registrations and rounds. User pages support
+search, detail, audited credit adjustments and suspend/reactivate. The games
+page controls per-game availability, odds targets, jackpot/bonus/free-spin
+probabilities, payout scale and a clearly marked friendly-play preset. Saved
+settings are persisted and used by the engine on the next round.
+
+To change the initial password, use the host terminal:
 
 ```bash
-php bin/console user:admin --username=your_username
+php bin/console user:password --username=admin --password='a-new-long-password'
 ```
 
-or, without SSH, run this once in phpMyAdmin:
-
-```sql
-UPDATE users SET role = 'admin' WHERE username = 'your_username';
-```
-
-The Admin entry then appears in the account drawer. Administrator rights are
-resolved server-side; no client value can grant them.
+Without SSH, generate a bcrypt hash with
+`php -r 'echo password_hash("a-new-long-password", PASSWORD_BCRYPT), PHP_EOL;'`
+and update `user_credentials.password_hash` for the `admin` row in phpMyAdmin.
 
 ## 4. CLI on the host
 
@@ -427,6 +442,7 @@ php bin/console db:status
 php bin/console db:migrate
 php bin/console user:create --username=player --password='a-long-password'
 php bin/console user:admin --username=player
+php bin/console user:password --username=admin --password='a-new-long-password'
 ```
 
 Cron jobs (optional) purge expired rows:
@@ -449,12 +465,25 @@ php bin/console audit:purge
   authentication uses random bearer tokens stored only as SHA-256 hashes.
 * Close public registration with `ALLOW_SELF_REGISTRATION=false` if accounts
   should be invite-only.
+* Keep `config/database.local.php` out of Git and out of web-accessible paths;
+  the shipped `config/.htaccess` denies it.
 README);
 
 if (is_string($savedEnv)) {
     put($target . '/.env', $savedEnv);
     chmod($target . '/.env', 0600);
 }
+
+if (is_string($savedDatabaseConfig)) {
+    put($target . '/config/database.local.php', $savedDatabaseConfig);
+    chmod($target . '/config/database.local.php', 0600);
+}
+
+put($target . '/.gitignore', <<<'GITIGNORE'
+# Local deployment credentials. Use config/database.local.example.php as the template.
+config/database.local.php
+.env
+GITIGNORE);
 
 put($target . '/.htdocs-build', json_encode([
     'generated_at' => gmdate('c'),

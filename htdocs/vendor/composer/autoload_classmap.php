@@ -6,6 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'CasinoEngine\\Admin\\AdminSession' => $baseDir . '/src/Admin/AdminSession.php',
     'CasinoEngine\\Api\\ApiKernel' => $baseDir . '/src/Api/ApiKernel.php',
     'CasinoEngine\\Api\\Controller\\AbstractController' => $baseDir . '/src/Api/Controller/AbstractController.php',
     'CasinoEngine\\Api\\Controller\\AdminController' => $baseDir . '/src/Api/Controller/AdminController.php',
@@ -41,6 +42,7 @@ return array(
     'CasinoEngine\\Cli\\Command\\TokenPurgeCommand' => $baseDir . '/src/Cli/Command/TokenPurgeCommand.php',
     'CasinoEngine\\Cli\\Command\\UserAdminCommand' => $baseDir . '/src/Cli/Command/UserAdminCommand.php',
     'CasinoEngine\\Cli\\Command\\UserCreateCommand' => $baseDir . '/src/Cli/Command/UserCreateCommand.php',
+    'CasinoEngine\\Cli\\Command\\UserPasswordCommand' => $baseDir . '/src/Cli/Command/UserPasswordCommand.php',
     'CasinoEngine\\Cli\\Command\\WalletShowCommand' => $baseDir . '/src/Cli/Command/WalletShowCommand.php',
     'CasinoEngine\\Core\\Bootstrap' => $baseDir . '/src/Core/Bootstrap.php',
     'CasinoEngine\\Core\\Config\\Config' => $baseDir . '/src/Core/Config/Config.php',
@@ -211,8 +213,11 @@ return array(
     'CasinoEngine\\Persistence\\Repository\\TokenRepository' => $baseDir . '/src/Persistence/Repository/TokenRepository.php',
     'CasinoEngine\\Persistence\\Repository\\UserRepository' => $baseDir . '/src/Persistence/Repository/UserRepository.php',
     'CasinoEngine\\Persistence\\Repository\\WalletRepository' => $baseDir . '/src/Persistence/Repository/WalletRepository.php',
+    'CasinoEngine\\Services\\Admin\\AdminService' => $baseDir . '/src/Services/Admin/AdminService.php',
+    'CasinoEngine\\Services\\Admin\\GameControlService' => $baseDir . '/src/Services/Admin/GameControlService.php',
     'CasinoEngine\\Services\\Auth\\AuthService' => $baseDir . '/src/Services/Auth/AuthService.php',
     'CasinoEngine\\Services\\Auth\\AuthServiceInterface' => $baseDir . '/src/Services/Auth/AuthServiceInterface.php',
+    'CasinoEngine\\Services\\Auth\\PhoneNumber' => $baseDir . '/src/Services/Auth/PhoneNumber.php',
     'CasinoEngine\\Services\\Betting\\BettingService' => $baseDir . '/src/Services/Betting/BettingService.php',
     'CasinoEngine\\Services\\Betting\\BettingServiceInterface' => $baseDir . '/src/Services/Betting/BettingServiceInterface.php',
     'CasinoEngine\\Services\\History\\HistoryService' => $baseDir . '/src/Services/History/HistoryService.php',

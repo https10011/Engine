@@ -9,8 +9,9 @@
 -- Import into an EMPTY database, once. It is not a migration for an existing
 -- installation; use `php bin/console db:migrate` to upgrade one of those.
 --
--- It creates no user account and no demo data. Register the first player in the
--- browser, or use: php bin/console user:create --username=... --password=...
+-- It seeds one administrator (`admin`, bcrypt password hash only) and no
+-- player accounts. Register players in the browser. Change the administrator
+-- password immediately after the first sign-in at /admin.php.
 -- ---------------------------------------------------------------------------
 
 SET NAMES utf8mb4;
@@ -450,6 +451,85 @@ ALTER TABLE `payouts`
     MODIFY COLUMN `multiplier_num` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     MODIFY COLUMN `multiplier_den` BIGINT UNSIGNED NOT NULL DEFAULT 1;
 
+-- ---------------------------------------------------------------------------
+-- Migration: 2026_01_03_000001_add_player_profile_fields.sql
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Player profile fields.
+--
+-- Ordinary players now sign in with a phone number and never choose a public
+-- username. `username` stays as the internal, unique account identifier (the
+-- CLI still creates operator accounts with one); `phone` is the player-facing
+-- login and is nullable for those operator accounts.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE `users`
+    ADD COLUMN `phone` VARCHAR(20) NULL AFTER `username`,
+    ADD COLUMN `age` TINYINT UNSIGNED NULL AFTER `display_name`;
+
+ALTER TABLE `users`
+    ADD UNIQUE KEY `uniq_users_phone` (`phone`);
+
+-- ---------------------------------------------------------------------------
+-- Migration: 2026_01_03_000002_create_game_controls.sql
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Operator controls that are independent of the probability profile.
+--
+-- A game with no row here is available and not marked friendly-play. The
+-- missing row is the default, so the table starts empty and no game has to be
+-- seeded before the application can run.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `game_controls` (
+    `game_id`       VARCHAR(64)     NOT NULL,
+    `available`     TINYINT(1)      NOT NULL DEFAULT 1,
+    `friendly_play` TINYINT(1)      NOT NULL DEFAULT 0,
+    `updated_by`    BIGINT UNSIGNED NULL,
+    `updated_at`    DATETIME        NOT NULL,
+    PRIMARY KEY (`game_id`),
+    KEY `idx_game_controls_available` (`available`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Migration: 2026_01_03_000003_seed_initial_admin.sql
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Initial administrator.
+--
+-- The plaintext password is not stored in this repository. The value below is
+-- a bcrypt hash of the initial operator password supplied for this private
+-- installation. Change it from the server console after the first login:
+--
+--   php bin/console user:password --username=admin --password='a new long password'
+--
+-- The hash is only inserted if the `admin` account does not already exist, so
+-- re-running the migrations never resets a changed password.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO `users` (`username`, `display_name`, `status`, `role`, `created_at`, `updated_at`)
+SELECT 'admin', 'Administrator', 'active', 'admin', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = 'admin');
+
+INSERT INTO `user_credentials` (`user_id`, `password_hash`, `algo`, `updated_at`)
+SELECT `id`,
+       '$2y$10$NXEa6SFioE7HfHzxN.wtN.zccgozxbuV.74pCTOCkaHLVgXGiVMhm',
+       'bcrypt',
+       UTC_TIMESTAMP()
+FROM `users`
+WHERE `username` = 'admin'
+  AND NOT EXISTS (SELECT 1 FROM `user_credentials` WHERE `user_id` = `users`.`id`);
+
+INSERT INTO `wallets` (`user_id`, `currency`, `scale`, `balance_minor`, `version`, `created_at`, `updated_at`)
+SELECT `id`, 'PHP', 2, 0, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+FROM `users`
+WHERE `username` = 'admin'
+  AND NOT EXISTS (SELECT 1 FROM `wallets` WHERE `user_id` = `users`.`id`);
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Record what this file applied, so the runtime migration runner agrees.
@@ -458,3 +538,6 @@ INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VA
 INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VALUES ('2026_01_02_000001_create_probability_tables', '2026_01_02_000001_create_probability_tables.sql', UTC_TIMESTAMP(), '2e0744b48880a32bf4914c9f0586bea410edabecca13ab3d2b6f8c8e2f6d4758');
 INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VALUES ('2026_01_02_000002_add_admin_role', '2026_01_02_000002_add_admin_role.sql', UTC_TIMESTAMP(), '86d59cb18a7a3b26fff3996f208f787063a3df6fe51a7fe984d28218af0ad7b8');
 INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VALUES ('2026_01_02_000003_widen_multiplier_columns', '2026_01_02_000003_widen_multiplier_columns.sql', UTC_TIMESTAMP(), '06f7f137aadeb5ac928bf847d8da2c3b2c5f2c0eee784f68c90e4724de632e32');
+INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VALUES ('2026_01_03_000001_add_player_profile_fields', '2026_01_03_000001_add_player_profile_fields.sql', UTC_TIMESTAMP(), 'dd1e292579d77cb7319403d3722f64c6b9b744972f7ab2695b260f696234c5ca');
+INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VALUES ('2026_01_03_000002_create_game_controls', '2026_01_03_000002_create_game_controls.sql', UTC_TIMESTAMP(), 'd959890fb555d1524b5b04c44e345daa422e52f6baacb552f5758b92d9af9acf');
+INSERT IGNORE INTO `migrations` (`version`, `name`, `applied_at`, `checksum`) VALUES ('2026_01_03_000003_seed_initial_admin', '2026_01_03_000003_seed_initial_admin.sql', UTC_TIMESTAMP(), '581b52efac5494919bf9055517a8cbcd87e1d48f0e4ff7c22ab2f98c8c36a2e9');

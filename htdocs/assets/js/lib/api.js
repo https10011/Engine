@@ -94,11 +94,8 @@ export const api = {
   presentation: (gameId) => request('GET', `/games/${encodeURIComponent(gameId)}/presentation`, { auth: false }),
 
   // Auth
-  login: (username, password) => request('POST', '/auth/login', { body: { username, password }, auth: false }),
-  register: (username, password, displayName) => request('POST', '/auth/register', {
-    body: { username, password, display_name: displayName },
-    auth: false,
-  }),
+  login: (identifier, password) => request('POST', '/auth/login', { body: { identifier, password }, auth: false }),
+  register: (account) => request('POST', '/auth/register', { body: account, auth: false }),
   me: () => request('GET', '/auth/me'),
   logout: () => request('POST', '/auth/logout', { body: {} }),
 

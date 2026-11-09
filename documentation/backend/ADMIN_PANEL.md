@@ -3,6 +3,12 @@
 > Control and configuration of game probabilities, winning frequency, payout
 > behaviour, jackpot probability and game-specific probability settings.
 >
+> **UI note (2026-11-09):** the original SPA `/admin` route has been replaced by
+> the standalone server-rendered console at `/admin.php`. The probability
+> architecture, tables and engine enforcement described below are unchanged.
+> See [frontend/ADMIN_PANEL.md](../frontend/ADMIN_PANEL.md) for the access model,
+> user management and current forms.
+>
 > **Scope:** simulated credits only. This panel configures a simulated casino's
 > game mathematics. It contains no deposit, withdrawal, payment or
 > cryptocurrency functionality, and none will be added.

@@ -33,8 +33,10 @@ public/assets/js/
   views/roulette.js                roulette wheel and felt
   views/coinflip.js                coin flip
   views/history.js                 rounds + wallet ledger
-  views/admin.js                   admin probability panel (existing endpoints)
 ```
+
+The administrator console is outside this module graph: `public/admin.php` is
+server-rendered with its own session and does not ship in the player SPA.
 
 There is no build step, no bundler and no browser dependency. The shell loads ES
 modules with `type="module"`; the CSP allows only same-origin scripts.
@@ -113,6 +115,12 @@ exposes `syncBalance()` / `flashBalance()` for game views.
 account, search and the menu drawer. `app.js`:
 
 * opens/closes them from `data-action` buttons;
+* logs in with a phone number (or an administrator/CLI account's username);
+* registers with phone, display name, age and password, then shows a local demo OTP
+  step. A browser notification displays the six-digit code and the in-app code block is
+  the fallback; any six numeric digits are accepted and no SMS is sent;
+* renders Google/Facebook "Continue with …" buttons as presentation only (no OAuth
+  request, no third-party script);
 * validates login/registration and calls the API;
 * renders the search sheet from the cached catalogue (`ensureCatalogue()`);
 * closes on backdrop click and Escape (native dialog behaviour), and returns focus to the
@@ -127,12 +135,15 @@ One additive endpoint was required for a working registration dialog:
 
 ```
 POST /api/v1/auth/register
-{ "username": "...", "password": "...", "display_name": "..." }
+{ "phone": "0917...", "display_name": "...", "age": 25,
+  "password": "...", "otp": "123456" }
 → 201 { user, token, expires_at, balance }
 ```
 
-It reuses `UserRepository`, `WalletRepository`, `AuthService::hashPassword()` and
-`issueToken()` in a transaction, and is gated by `security.allow_self_registration`.
+It canonicalises the phone, reuses `UserRepository`, `WalletRepository`,
+`AuthService::hashPassword()` and `issueToken()` in a transaction, and is gated by
+`security.allow_self_registration`. The starting grant is exactly 300 credits and
+is created only with the account transaction, so it cannot repeat.
 No existing route, controller, service, game registration or test was removed or
 changed. See [API_SPECIFICATION.md](../backend/API_SPECIFICATION.md) §2 and `tests/Api/ApiTest.php`.
 

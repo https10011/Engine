@@ -61,6 +61,8 @@ final class Bootstrap
             'AUDIT_RETENTION_DAYS',
             'RATE_LIMIT_RETENTION_DAYS',
             'PASSWORD_ALGO',
+            'ALLOW_SELF_REGISTRATION',
+            'REGISTRATION_STARTING_BALANCE_MINOR',
             'ENGINE_VERSION_OVERRIDE',
         ]);
 

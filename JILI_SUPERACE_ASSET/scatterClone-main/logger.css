@@ -1,0 +1,201 @@
+
+body{
+    height: 1000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .frame{
+    display: flex;
+    flex-direction: row;
+    width:494px;
+    border: 5px solid;
+    border-color:silver;
+    height:475px;background-color:darkgreen;
+  }
+  .c1{
+    margin-left: 2px;
+  }
+
+  #betField{
+    width: 70px;
+    height: 30px;
+  }
+  #fastBtn{
+    width:50px;height:50px;
+  }
+  #fastBtn, #spinBtn{
+    border-radius: 100%;
+  }
+  #spinBtn_img{
+    height: 100px;width: 100px;
+  }
+  #spinBtn{
+    width:100px;height:100px;display: flex;align-items: center;justify-content: center;overflow: hidden;
+  }
+  .btnsBox{
+    display: flex;
+    width: 150px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  
+  .row{
+    display: flex;
+    flex-direction: row;
+    justify-content:space-evenly;
+  }
+  img{ height:112.5px; width:90px;}
+  .slots{height:112.5px; width:90px; margin-top: 5px;position:relative;}
+
+  .c2,.c3,.c4,.c5{ margin-left: 100px; position:relative;}
+  
+  .column1Layer1{ position:absolute; margin: 0; }
+  .column2Layer1{ position:absolute; margin: 0; }
+  .column3Layer1{ position:absolute; margin: 0; }
+  .column4Layer1{ position:absolute; margin: 0; }
+  .column5Layer1{ position:absolute; margin: 0; }
+  .column1Layer2{ position:absolute; margin-top: 118px; }
+  .column2Layer2{ position:absolute; margin-top: 118px; }
+  .column3Layer2{ position:absolute; margin-top: 118px; }
+  .column4Layer2{ position:absolute; margin-top: 118px; }
+  .column5Layer2{ position:absolute; margin-top: 118px; }
+  .column1Layer3{ position:absolute; margin-top: 236px; }
+  .column2Layer3{ position:absolute; margin-top: 236px; }
+  .column3Layer3{ position:absolute; margin-top: 236px; }
+  .column4Layer3{ position:absolute; margin-top: 236px; }
+  .column5Layer3{ position:absolute; margin-top: 236px; }
+  .column1Layer4{ position:absolute; margin-top: 354px; }
+  .column2Layer4{ position:absolute; margin-top: 354px; }
+  .column3Layer4{ position:absolute; margin-top: 354px; }
+  .column4Layer4{ position:absolute; margin-top: 354px; }
+  .column5Layer4{ position:absolute; margin-top: 354px; }
+  
+  .red_wildCards{
+    position: absolute;height:112.5px; width:90px;
+    opacity: 0; z-index: 1;
+  }
+  .columnNo1{margin-left: 2.5px}
+  .columnNo2{margin-left: 102.5px}
+  .columnNo3{margin-left: 202.5px}
+  .columnNo4{margin-left: 302.5px}
+  .columnNo5{margin-left: 402.5px}
+  
+  .rowNo1{margin-top: 5px;}
+  .rowNo2{margin-top: 123px;}
+  .rowNo3{margin-top: 240.5px;}
+  .rowNo4{margin-top: 358.5px;}
+  
+  .c1Slot1Roll{animation:roll 0.5s  linear ;}
+  .c1Slot2Roll{animation:roll 0.4s  linear ;}
+  .c1Slot3Roll{animation:roll 0.3s  linear ;}
+  .c1Slot4Roll{animation:roll 0.2s  linear ;}
+  
+  .c2Slot1Roll{animation:roll 0.6s  linear ;}
+  .c2Slot2Roll{animation:roll 0.5s  linear ;}
+  .c2Slot3Roll{animation:roll 0.4s  linear ;}
+  .c2Slot4Roll{animation:roll 0.3s  linear ;}
+  
+  .c3Slot1Roll{animation:roll 0.7s  linear ;}
+  .c3Slot2Roll{animation:roll 0.6s  linear ;}
+  .c3Slot3Roll{animation:roll 0.5s  linear ;}
+  .c3Slot4Roll{animation:roll 0.4s  linear ;}
+  
+  .c4Slot1Roll{animation:roll 0.8s  linear ;}
+  .c4Slot2Roll{animation:roll 0.7s  linear ;}
+  .c4Slot3Roll{animation:roll 0.6s  linear ;}
+  .c4Slot4Roll{animation:roll 0.5s  linear ;}
+  
+  .c5Slot1Roll{animation:roll 0.9s  linear ;}
+  .c5Slot2Roll{animation:roll 0.8s  linear ;}
+  .c5Slot3Roll{animation:roll 0.7s  linear ;}
+  .c5Slot4Roll{animation:roll 0.6s  linear ;}
+  
+  
+  @keyframes roll{
+    0%{margin-top:-458px; } 100%{margin-top:10px; }
+  }
+  
+  .c1Slot1ReRoll{animation:reRoll 0.9s  linear ;}
+  .c1Slot2ReRoll{animation:reRoll 0.8s  linear ;}
+  .c1Slot3ReRoll{animation:reRoll 0.7s  linear ;}
+  .c1Slot4ReRoll{animation:reRoll 0.6s  linear ;}
+  .c2Slot1ReRoll{animation:reRoll 1s  linear ;}
+  .c2Slot2ReRoll{animation:reRoll 0.9s  linear ;}
+  .c2Slot3ReRoll{animation:reRoll 0.8s  linear ;}
+  .c2Slot4ReRoll{animation:reRoll 0.7s  linear ;}
+  .c3Slot1ReRoll{animation:reRoll 1.1s  linear ;}
+  .c3Slot2ReRoll{animation:reRoll 1s  linear ;}
+  .c3Slot3ReRoll{animation:reRoll 0.9s  linear ;}
+  .c3Slot4ReRoll{animation:reRoll 0.8s  linear ;}
+  .c4Slot1ReRoll{animation:reRoll 1.2s  linear ;}
+  .c4Slot2ReRoll{animation:reRoll 1.1s  linear ;}
+  .c4Slot3ReRoll{animation:reRoll 1s  linear ;}
+  .c4Slot4ReRoll{animation:reRoll 0.9s  linear ;}
+  .c5Slot1ReRoll{animation:reRoll 1.3s  linear ;}
+  .c5Slot2ReRoll{animation:reRoll 1.2s  linear ;}
+  .c5Slot3ReRoll{animation:reRoll 1.1s  linear ;}
+  .c5Slot4ReRoll{animation:reRoll 1s  linear ;}
+  
+  @keyframes reRoll{
+    0%{background-color:red; } 
+    10%{scale: 1.5;}
+    49%{scale: 1;margin-top:0px;}
+    50%{margin-top:-458px;}
+    60% {margin-top: -458px;}
+    100%{margin-top:10px; }
+  }
+  .rotateCard{animation:rotate 1.3s  linear ;}
+  @keyframes rotate{
+    0%{rotate:0 1 0 0deg; }
+    30%{rotate:0 1 0 180deg; }
+    70%{rotate:0 1 0 180deg;}
+    100%{rotate:0 1 0 360deg; }
+  }
+  @keyframes goToSlot1Position{0%{opacity: 1;}100%{margin-top: 5px; margin-left:2.5px  ;}}
+  @keyframes goToSlot2Position{0%{opacity: 1;}100%{margin-top: 5px; margin-left:102.5px;}}
+  @keyframes goToSlot3Position{0%{opacity: 1;}100%{margin-top: 5px; margin-left:202.5px;}}
+  @keyframes goToSlot4Position{0%{opacity: 1;}100%{margin-top: 5px; margin-left:302.5px;}}
+  @keyframes goToSlot5Position{0%{opacity: 1;}100%{margin-top: 5px; margin-left:402.5px;}}
+  @keyframes goToSlot6Position{0%{opacity: 1;}100%{margin-top: 123px; margin-left:2.5px;}}
+  @keyframes goToSlot7Position{0%{opacity: 1;}100%{margin-top: 123px; margin-left:102.5px ;}}
+  @keyframes goToSlot8Position{0%{opacity: 1;}100%{margin-top: 123px; margin-left:202.5px ;}}
+  @keyframes goToSlot9Position{0%{opacity: 1;}100%{margin-top: 123px; margin-left:302.5px ;}}
+  @keyframes goToSlot10Position{0%{opacity: 1;}100%{margin-top: 123px; margin-left:402.5px;}}
+  @keyframes goToSlot11Position{0%{opacity: 1;}100%{margin-top: 240.5px; margin-left:2.5px  ;}}
+  @keyframes goToSlot12Position{0%{opacity: 1;}100%{margin-top: 240.5px; margin-left:102.5px;}}
+  @keyframes goToSlot13Position{0%{opacity: 1;}100%{margin-top: 240.5px; margin-left:202.5px;}}
+  @keyframes goToSlot14Position{0%{opacity: 1;}100%{margin-top: 240.5px; margin-left:302.5px;}}
+  @keyframes goToSlot15Position{0%{opacity: 1;}100%{margin-top: 240.5px; margin-left:402.5px;}}
+  @keyframes goToSlot16Position{0%{opacity: 1;}100%{margin-top: 358.5px; margin-left:2.5px  ;}}
+  @keyframes goToSlot17Position{0%{opacity: 1;}100%{margin-top: 358.5px; margin-left:102.5px;}}
+  @keyframes goToSlot18Position{0%{opacity: 1;}100%{margin-top: 358.5px; margin-left:202.5px;}}
+  @keyframes goToSlot19Position{0%{opacity: 1;}100%{margin-top: 358.5px; margin-left:302.5px;}}
+  @keyframes goToSlot20Position{0%{opacity: 1;}100%{margin-top: 358.5px; margin-left:402.5px;}}
+  
+  .slot1Position{ animation:goToSlot1Position 0.13s linear ;}
+  .slot2Position{ animation:goToSlot2Position 0.13s linear ;}
+  .slot3Position{ animation:goToSlot3Position 0.13s linear ;}
+  .slot4Position{ animation:goToSlot4Position 0.13s linear ;}
+  .slot5Position{ animation:goToSlot5Position 0.13s linear ;}
+  .slot6Position{ animation:goToSlot6Position 0.13s linear ;}
+  .slot7Position{ animation:goToSlot7Position 0.13s linear ;}
+  .slot8Position{ animation:goToSlot8Position 0.13s linear ;}
+  .slot9Position{ animation:goToSlot9Position 0.13s linear ;}
+  .slot10Position{ animation:goToSlot10Position 0.13s linear ;}
+  .slot11Position{ animation:goToSlot11Position 0.13s linear ;}
+  .slot12Position{ animation:goToSlot12Position 0.13s linear ;}
+  .slot13Position{ animation:goToSlot13Position 0.13s linear ;}
+  .slot14Position{ animation:goToSlot14Position 0.13s linear ;}
+  .slot15Position{ animation:goToSlot15Position 0.13s linear ;}
+  .slot16Position{ animation:goToSlot16Position 0.13s linear ;}
+  .slot17Position{ animation:goToSlot17Position 0.13s linear ;}
+  .slot18Position{ animation:goToSlot18Position 0.13s linear ;}
+  .slot19Position{ animation:goToSlot19Position 0.13s linear ;}
+  .slot20Position{ animation:goToSlot20Position 0.13s linear ;}
+  
+  
+  
+  
+  
